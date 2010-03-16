@@ -1,0 +1,33 @@
+{
+    "name": "require-js",
+    "description": "CommonJS modules 1.0 loader for browsers.",
+    "version": "0.1",
+    "keywords": ["commonjs", "modules", "require"],
+    "maintainers": [
+        {
+            "name": "Irakli Gozalishvili",
+            "email": "rfobic@gmail.com",
+            "web": "http://rfobic.wordpress.com/"
+        }
+    ],
+    "contributors": [
+        {
+            "name": "Irakli Gozalishvili",
+            "email": "rfobic@gmail.com",
+            "web": "http://rfobic.wordpress.com/"
+        }
+    ],
+    "bugs": { "web": "http://github.com/Gozala/require-js/issues/" },
+    "licenses": [
+        { "type": "GPL" }
+    ],
+    "repositories": [
+        {
+            "type": "git",
+            "url": "git://github.com/Gozala/require-js.git",
+        }
+    ],
+    "directories": {
+        "lib": "lib"
+    }
+}
