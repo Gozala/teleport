@@ -39,7 +39,7 @@ How are dependencies declared
 Existing CommonJS [package] specification describes way of declaring dependencies. Where to retrieve package from is a separate concern. Program should provide all the necessary pointers to a platform it's using. It is important to note that non program packages delegate responsibility of providing pointers to a program that is going to use them. In an example of [Transquire] *(and hopefully this will find it's way to CommonJS)* pointers are described in `catalog.json` in a program package.  
 Each key in the `catalog.json` represents a name / ID of the package it depends on. Corresponding value is a "pointer" hash with must have **`uri`** field with value of a unique package [URI] *(described in a first section of this document)*. It is expected that package managers will generate `catalog.json` files where "pointer"'s will be a corresponding package descriptors with additional **`uri`** field. In order to support design goal of zero tolling, [Transquire] only expects to find **`uri`** + other field that happens to contains a non standard values.  
 *Example*:
-> <pre class="code">
+<pre class="console">
 {
     "taskhub": { 
         "uri": "http://gozala.github.com/taskhub/",
@@ -56,7 +56,7 @@ How are package modules required
 --------------------------------
 > 
 As mention in first section package is just an [URI] and there for all the contained modules do translate to a sub [URI]'s. This paradigm provides enough space for creating interoperable reusable modules that can be used in any environment, regardless of package manager. Just like in browser any script can be injected to a page by its unique URI, so any module can be required by it's own unique URI regardless of which package it happened to be contained: 
-> <pre class="code">  
+<pre class="console">  
 require("<a href="http://github.com/Gozala/taskhub/blob/gh-pages/lib/taskhub/main.js">http://github.com/Gozala/taskhub/lib/main.js</a>");
 </pre>
 
@@ -66,7 +66,7 @@ require("<a href="http://github.com/Gozala/taskhub/blob/gh-pages/lib/taskhub/mai
 * change of module hosting in some cases may invalidates third party codebase.
 
 > To address this exact issues issues program packages are mandated to provide a pointers to it's (nested) dependency packages. Having that in place example above can be easily translated to something that is expected to be used instead: 
-> <pre class="code">  
+<pre class="console">  
 require("<a href="http://github.com/Gozala/taskhub/blob/gh-pages/lib/taskhub/main.js">taskhub/main</a>");
 </pre>
 Please notice that this is fully spec compatible with specs use of require. Details of URI to id translation are described below:
@@ -89,7 +89,7 @@ Module path within the package lib remains same just expect a file extension **`
 > 
 **Please note**: Some platforms may depend on a query params, for that case scenarios URI's to a modules are resolved according to an example below:
 
-> <pre class="console">
+<pre class="console">
 // package "mypackage"
 require("http://module.loader.com/?get=mypackage")
 // module "foo/bar" from "mypackage"
