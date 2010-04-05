@@ -51,7 +51,7 @@ Each key in the `catalog.json` represents a name / ID of the package it depends 
         }        
     }
 }
-</code>
+</pre>
 How are package modules required
 --------------------------------
 > 
