@@ -1,3 +1,5 @@
+teleport
+========
 
 This example demonstrates loading a set of CommonJS with asynchronous
 XMLHttpRequests.
@@ -33,3 +35,4 @@ hosting, compliation, server side support, bundling, and preloading.
  * bundling: not supported
  * preloading: not supported
 
+<img alt="Dependency graph" src="http://yuml.me/diagram/scruffy;dir:LR;scale:80;/class/[Sandbox{bg:red}], [Sandbox]-.->[teleport/descriptors], [Sandbox]-.->[teleport/loader], [Sandbox]-.->[system], [teleport/loader]->[teleport/packages], [teleport/loader]->[teleport/descriptors], [teleport/loader]->[narwhal/promise], [teleport/packages]->[packages], [system]->[teleport/engine]"/>

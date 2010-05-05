@@ -1,7 +1,7 @@
-Transquire: Package mapping
+Teleport: Package mapping
 ===========================
 
-This high-level design document outlines how [Transquire] builds a [CommonJS] system in a browser. Design goal is to bring [CommonJS] system but preserve simplicity of current web development model, with zero tooling setup. Design relays on URI's that are capable to identify any module or a package and provides bidirectional **URI** ~ **ID** translation scheme allowing deterministic delivery of package module requirements, regardless of a platform and a package manager. Design solves module id conflicts by namespacing them under unique package name, leaving flexibility of platform specific overlays possible using custom URI schemes. Intention of this document is to answer fundamental questions:
+This high-level design document outlines how [Teleport] builds a [CommonJS] system in a browser. Design goal is to bring [CommonJS] system but preserve simplicity of current web development model, with zero tooling setup. Design relays on URI's that are capable to identify any module or a package and provides bidirectional **URI** ~ **ID** translation scheme allowing deterministic delivery of package module requirements, regardless of a platform and a package manager. Design solves module id conflicts by namespacing them under unique package name, leaving flexibility of platform specific overlays possible using custom URI schemes. Intention of this document is to answer fundamental questions:
 
 What is package
 ---------------
@@ -36,7 +36,7 @@ How are dependencies declared
 -----------------------------
 > 
 Existing CommonJS [package] specification describes a way of declaring dependencies. "Where to retrieve dependent package from" is a separate concern. Program should provide necessary pointers for it's dependencies to a platform. It is important to notice that non program packages delegate responsibility of providing pointers to a program since they are going to be consumers. In an example of [Transquire] *(and hopefully this will find it's way to CommonJS)* pointers are provided in a **catalog.json** in of program package.  
-Each key in the **catalog.json** represents a name of the package it depends on. Corresponding value is a "pointer" hash with must have **uri** field and a value of a unique package [URI] *(described in a first section of this document)*. It is expected that package managers will generate **catalog.json** files where "pointer's" will be a corresponding package descriptors with additional **uri** field. In order to support design goal of zero tolling, [Transquire] expects to find only **uri** + other package descriptor field that have non default values.  
+Each key in the **catalog.json** represents a name of the package it depends on. Corresponding value is a "pointer" hash with must have **uri** field and a value of a unique package [URI] *(described in a first section of this document)*. It is expected that package managers will generate **catalog.json** files where "pointer's" will be a corresponding package descriptors with additional **uri** field. In order to support design goal of zero tolling, [Teleport] expects to find only **uri** + other package descriptor field that have non default values.  
 *Example*:
 <pre class="console">
 {
@@ -92,6 +92,6 @@ require("http://module.loader.com/?get=mypackage/foo/bar.js")
 
 
 [CommonJS]:(http://commonjs.org/)
-[Transquire]:(http://github.com/Gozala/require-js)
+[Teleport]:(http://github.com/Gozala/teleport/)
 [package]:(http://wiki.commonjs.org/wiki/Packages)
 [URI]:(http://en.wikipedia.org/wiki/Uniform_Resource_Identifier)
