@@ -1,33 +1,24 @@
-{
-    "name": "teleport",
-    "description": "CommonJS modules 1.0 loader for browsers.",
-    "version": "0.1.1",
-    "keywords": ["commonjs", "modules", "require"],
-    "maintainers": [
-        {
-            "name": "Irakli Gozalishvili",
-            "email": "rfobic@gmail.com",
-            "web": "http://rfobic.wordpress.com/"
-        }
-    ],
-    "contributors": [
-        {
-            "name": "Irakli Gozalishvili",
-            "email": "rfobic@gmail.com",
-            "web": "http://rfobic.wordpress.com/"
-        }
-    ],
-    "bugs": { "web": "http://github.com/Gozala/teleport/issues/" },
-    "licenses": [
-        { "type": "GPL" }
-    ],
-    "repositories": [
-        {
-            "type": "git",
-            "url": "git://github.com/Gozala/teleport.git",
-        }
-    ],
-    "directories": {
-        "lib": "lib"
-    }
+{ "name": "teleport"
+, "version": "0.1.2"
+, "description": "CommonJS modules 1.0 loader for browsers."
+, "homepage": "http://github.com/Gozala/teleport/"
+, "keywords": ["commonjs", "modules", "require"]
+, "contributors":
+  [ "Irakli Gozalishvili <rfobic@gmail.com> (http://jeditoolkit.com)" ]
+, "repository":
+  { "type": "git"
+  , "url": "git://github.com/Gozala/teleport.git"
+  }
+, "bugs": { "web": "http://github.com/Gozala/teleport/issues/" }
+, "directories":
+  { "doc": "./doc"
+  , "man": "./man"
+  , "lib": "./lib"
+  , "test": "./test"
+  }
+, "dependencies": { "test": ">=0.0.5" }
+, "main": "./lib/teleport.js"
+, "scripts": { "test": "node test/all.js" }
+, "engines": { "node": ">=0.1.103" }
+, "licenses" : [ { "type" : "GPL 2.0" } ]
 }
