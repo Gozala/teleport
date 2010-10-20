@@ -1,0 +1,39 @@
+body {
+    background: url(../images/bg.jpg);
+    color: rgb(253, 249, 250);
+    font-size: 2em;
+    font-family: 'Helvetiva Neue', Helvetica, Arial, sans-serif;
+}
+.ribbon {
+    position: absolute;
+    z-index: 3;
+    overflow: hidden;
+    height: 100px;
+    right: 0;
+    top: 0;
+    pointer-events: none;
+}
+.ribbon > a {
+    pointer-events: auto;
+    outline: none;
+    position: relative;
+    top: 25px;
+    left: 45px;
+    background-color: #a00;
+    -moz-transform: rotate(45deg);
+    -webkit-transform: rotate(45deg);
+    /* shadow */
+    -moz-box-shadow: 0 0 1em #333;
+    -webkit-box-shadow: 0 0 1em #333;
+    display: block;
+    border: 1px solid #faa;
+    color: #fff;
+    font: bold 10px 'Helvetiva Neue', Helvetica, Arial, sans-serif;
+    margin: 0.05em 0 0.075em 0;
+    padding: 0.5em 3.5em;
+    text-align: center;
+    text-decoration: none;
+    /* shadow */
+    text-shadow: 0 0 0.5em #444;
+}
+
