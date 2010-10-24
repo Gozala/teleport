@@ -16,8 +16,12 @@
   , "lib": "./lib"
   , "test": "./test"
   }
-, "dependencies": { "test": ">=0.0.5" }
+, "dependencies":
+  { "test": ">=0.0.5"
+  , "system": ">=0.0.1"
+  }
 , "main": "./lib/teleport.js"
+, "bin" : { "teleport" : "./lib/commands/commands.js" }
 , "scripts": { "test": "node test/all.js" }
 , "engines": { "node": ">=0.1.103" }
 , "licenses" : [ { "type" : "GPL 2.0" } ]
