@@ -19,6 +19,8 @@
 , "dependencies":
   { "test": ">=0.0.5"
   , "system": ">=0.0.1"
+  , "q": ">=0.1.0"
+  , "promised-fs": ">=0.0.3"
   }
 , "main": "./lib/teleport.js"
 , "bin" : { "teleport" : "./lib/commands/commands.js" }
