@@ -21,6 +21,7 @@
   , "system": ">=0.0.1"
   , "q": ">=0.1.0"
   , "promised-fs": ">=0.0.3"
+  , "promised-utils": ">=0.0.2"
   }
 , "main": "./lib/teleport.js"
 , "bin" : { "teleport" : "./lib/commands/commands.js" }
