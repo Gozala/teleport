@@ -1,6 +1,7 @@
 'use strict'
 
 var ID = require('teleport/utils/module').ID
+,   npm = require('teleport/strings').NPM_DIR
 
 exports['test normal module'] = function(assert) {
   var id = ID('teleport/engine/xhr+eval.js')
@@ -11,7 +12,7 @@ exports['test normal module'] = function(assert) {
   assert.equal(id.topId, 'teleport/engine/xhr+eval', 'module id is correct')
   assert.equal
   ( id.path
-  , '/usr/local/lib/node/.npm/teleport/active/package/lib/engine/xhr+eval.js'
+  , npm + '/teleport/active/package/lib/engine/xhr+eval.js'
   , 'module path is generated correctly'
   )
 }
@@ -25,7 +26,7 @@ exports['test main module'] = function(assert) {
   assert.equal(id.topId, 'teleport', 'module id is correct')
   assert.equal
   ( id.path
-  , '/usr/local/lib/node/.npm/teleport/active/package/lib/teleport.js'
+  , npm + '/teleport/active/package/lib/teleport.js'
   , 'module path is generated correctly'
   )
 }
