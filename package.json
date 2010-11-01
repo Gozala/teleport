@@ -11,13 +11,13 @@
   }
 , "bugs": { "web": "http://github.com/Gozala/teleport/issues/" }
 , "directories":
-  { "doc": "./doc"
+  { "doc": "./docs"
   , "man": "./man"
   , "lib": "./lib"
   , "test": "./test"
   }
 , "dependencies":
-  { "test": ">=0.0.5"
+  { "test": ">=0.0.8"
   , "system": ">=0.0.1"
   , "q": ">=0.1.0"
   , "promised-fs": ">=0.0.3"
@@ -27,5 +27,9 @@
 , "bin" : { "teleport" : "./lib/commands/commands.js" }
 , "scripts": { "test": "node test/all.js" }
 , "engines": { "node": ">=0.1.103" }
-, "licenses" : [ { "type" : "GPL 2.0" } ]
+, "licenses" :
+  [ { "type" : "MPL 1.1/LGPL 2.1/GPL 2.0"
+    , "url" : "http://www.mozilla.org/MPL/"
+    }
+  ]
 }
