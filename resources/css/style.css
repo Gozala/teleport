@@ -1,39 +1,76 @@
-body {
-    background: url(../images/bg.jpg);
-    color: rgb(253, 249, 250);
-    font-size: 2em;
-    font-family: 'Helvetiva Neue', Helvetica, Arial, sans-serif;
+html {
+  height: 100%;
+  -webkit-text-size-adjust:none;
 }
+
+body {
+  overflow: none;
+  font-size: 1em;
+  font-family: 'Helvetiva Neue', Helvetica, Arial, sans-serif;
+  background: #333;
+  background: #111414 no-repeat fixed center top -moz-radial-gradient(top,#2a2e30,#111414);
+  background: #111414 no-repeat fixed top center -webkit-gradient(radial, center top, 0, center top, 600, from(#2a2e30), to(#111414));
+  color: #fff;
+}
+
+.fixed {
+  font-family: monaco, 'Bitstream Vera Sans Mono','Courier', monospace
+}
+.logo {
+  margin: 0 -10px -20px -10px;
+}
+
+h1 {
+  font-size: 5em;
+  font-weight: bold;
+  padding: 0;
+  -webkit-text-stroke: hsla(200,100%,80%,.1) 1px;
+  color: #192a33;
+  text-shadow:
+    hsla(200,100%,70%,.9) 1px -1px 2px,
+    hsla(200,100%,50%,.2) 0 -5px 20px,
+    rgba(0,0,0,0.9) -10px 20px 25px;
+}
+section {
+  text-shadow: #222 1px 1px 0.3em;
+}
+
 .ribbon {
-    position: absolute;
-    z-index: 3;
-    overflow: hidden;
-    height: 100px;
-    right: 0;
-    top: 0;
-    pointer-events: none;
+  position: fixed;
+  z-index: 3;
+  overflow: hidden;
+  height: 300px;
+  right: 0;
+  top: 0;
+  pointer-events: none;
 }
 .ribbon > a {
-    pointer-events: auto;
-    outline: none;
-    position: relative;
-    top: 25px;
-    left: 45px;
-    background-color: #a00;
-    -moz-transform: rotate(45deg);
-    -webkit-transform: rotate(45deg);
-    /* shadow */
-    -moz-box-shadow: 0 0 1em #333;
-    -webkit-box-shadow: 0 0 1em #333;
-    display: block;
-    border: 1px solid #faa;
-    color: #fff;
-    font: bold 10px 'Helvetiva Neue', Helvetica, Arial, sans-serif;
-    margin: 0.05em 0 0.075em 0;
-    padding: 0.5em 3.5em;
-    text-align: center;
-    text-decoration: none;
-    /* shadow */
-    text-shadow: 0 0 0.5em #444;
+  pointer-events: auto;
+  outline: none;
+  position: relative;
+  top: 35px;
+  left: 35px;
+  background-color: #192a33;
+  -moz-transform: rotate(45deg);
+  -webkit-transform: rotate(45deg);
+  /* shadow */
+  -moz-box-shadow:
+    -2px -1px 0px hsla(200,100%,70%,.7),
+    0 -5px 10px hsla(200,100%,50%,.1),
+    -10px 20px 25px rgba(0,0,0,0.9);
+  -webkit-box-shadow:
+    hsla(200,100%,70%,.7) -1px -1px -2px,
+    hsla(200,100%,50%,.1) 0 -5px 20px,
+    rgba(0,0,0,0.9) -10px 20px 25px;
+  display: block;
+  border: 1px solid hsla(200,100%,80%,.1);
+  color: #ccc;
+  font: bold 10px 'Helvetiva Neue', Helvetica, Arial, sans-serif;
+  margin: 0.05em 0 0.075em 0;
+  padding: 0.5em 3.5em;
+  text-align: center;
+  text-decoration: none;
+  /* shadow */
+  text-shadow: 0 0 0.5em hsla(200,100%,70%,.7);
 }
 
