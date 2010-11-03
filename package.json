@@ -29,7 +29,7 @@
       { "backbone": ">=0.1.0"
       , "mustache": ">=0.3.0"
       , "markdown-js": ">=0.0.3"
-      , "promised-http": ">=0.0.1"
+      , "promised-http": ">=0.0.2"
       , "q": ">=0.1.0"
       }
     , "directories": { "lib": "./engines/teleport" }
