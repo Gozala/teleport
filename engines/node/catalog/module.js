@@ -68,14 +68,13 @@ exports.Module = function Module(options) {
 var ModuleTrait = Trait(
 { packages: Trait.required
 , packagesPath: Trait.required
-, url: Trait.required
+, id: Trait.required
 , get packageMeta() {
     return this.packages[this.packageName]
   }
   // Package name
 , get packageName() {
-    var name = this.url.split(SEPARATOR)[0].split(VERSION_MARK)[0]
-    return name.substr(-3) == EXTENSION ? name.substr(0, name.length - 3) : name
+    return name = this.id.split(SEPARATOR)[0].split(VERSION_MARK)[0]
   }
 , get packagePath() {
     return this.packagesPath.join
@@ -83,19 +82,14 @@ var ModuleTrait = Trait(
   }
   // Whether or not this module is main.
 , get isMain() {
-    return 0 > this.url.indexOf(SEPARATOR)
+    return 0 > this.id.indexOf(SEPARATOR)
   }
   // Package version
 , get version() {
-    var version = this.url.split(SEPARATOR)[0].split(VERSION_MARK)[1] || ''
-    return version.substr(-3) == EXTENSION ?
-      version.substr(0, version.length - 3) : version
+    return this.id.split(SEPARATOR)[0].split(VERSION_MARK)[1] || ''
   }
 , get relativeId() {
     return this.id.substr(this.id.indexOf(SEPARATOR) + 1)
-  }
-, get id() {
-    return this.url.substr(0, this.url.length - EXTENSION.length)
   }
 , get path() {
     var packageMeta = this.packageMeta

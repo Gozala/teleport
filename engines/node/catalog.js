@@ -90,8 +90,8 @@ exports.Catalog = function Catalog(path) {
 var CatalogTrait = Trait(
 { packages: Trait.required
 , root: Trait.required
-, module: function module(url) {
-    return Module({ url: url, packages: this.packages, packagesPath: root })
+, module: function module(id) {
+    return Module({ id: id, packages: this.packages, packagesPath: root })
   }
 })
 
