@@ -1,5 +1,3 @@
-### Introduction ###
-
 Teleport is an attempt to bring all the innovation and awesomeness of
 JavaScript on server back to the browser.
 
