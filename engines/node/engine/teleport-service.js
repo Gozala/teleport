@@ -8,25 +8,6 @@ define('teleport/engine', function(require, exports, module, undefined) {
   ,   modules = {}
   ,   packages = {}
 
-  ,   ERR_MISS_ID = 'Module id is not specified'
-  ,   COMMENTS_MATCH = /(\/\*([^*]|[\r\n]|(\*+([^*\/]|[\r\n])))*\*+\/)|((^|\n)[^\'\"\n]*\/\/[^\n]*)/g
-  ,   REQUIRE_MATCH = /(^|[^\w\_])require\s*\(('|")([\w\W]*?)('|")\)/g
-  ,   TRANSPORT_WRAPPER = 'define("{{id}}", function(require, exports, module, undefined) { {{source}}\n/**/})\n//@ sourceURL={{url}}\n'
-
-  /**
-   * Pareses module source and returns array of required module ID's
-   * @param {String} source
-   *    module source
-   * @returns {String[]}
-   */
-  function depends(source) {
-      var source = source.replace(COMMENTS_MATCH, "")
-      , dependencies = []
-      , dependency
-      while(dependency = REQUIRE_MATCH.exec(source))
-        dependencies.push(dependency[3])
-      return dependencies
-  }
   /**
    * Resolves relative module ID to an absolute id.
    * @param {String} id
@@ -71,11 +52,7 @@ define('teleport/engine', function(require, exports, module, undefined) {
       // or a tracked module itself:
       if (0 <= index || trackedFactory == factory) {
         // - Finding modules dependencies.
-        depends(factory.create + '').forEach(function(id) {
-          id = resolveId(id, factory.id)
-          // - Registering each dependency in the module factory.
-          var dependencies = factory.dependencies || (factory.dependencies = [])
-          if (0 > dependencies.indexOf(id)) dependencies.push(id)
+        factory.dependencies.forEach(function(id) {
           // - Registering each dependency to the tracked module factory.
           if (0 > trackedDependencies.indexOf(id)) trackedDependencies.push(id)
           // - Loading a dependency. If module loading fails

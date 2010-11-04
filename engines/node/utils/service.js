@@ -37,9 +37,9 @@ exports.activate = function activate() {
       )
     } else if (0 == index) {
       var path = path.substr(CONST.PACKAGES_URI_PATH.length)
-      when(catalog.module(path).transport, function(source) {
+      when(catalog.module(path).transport, function(moduleTransport) {
         response.writeHead(200, { 'Content-Type': 'text/javascript' })
-        response.end(source)
+        response.end(moduleTransport.toString())
       })
     } else {
       path = catalog.root.join(path)

@@ -14,6 +14,53 @@ var fs =  require('promised-fs')
 ,   TRANSPORT_WRAPPER = CONST.TRANSPORT_WRAPPER
 ,   MODULE_NOT_FOUND_ERROR = CONST.MODULE_NOT_FOUND_ERROR
 ,   PACKAGE_NOT_FOUND_ERROR = CONST.PACKAGE_NOT_FOUND_ERROR
+,   COMMENTS_MATCH = CONST.COMMENTS_MATCH
+,   REQUIRE_MATCH = CONST.REQUIRE_MATCH
+
+var ModuleTransport = function ModuleTransport(options) {
+  var moduleTransport = Object.create(ModuleTransport.prototype,
+    { path: { value: options.path }
+    , id: { value: options.id }
+    })
+  return when
+  ( options.source
+  , function sourceResolved(source) {
+      moduleTransport.source = String(source)
+      return moduleTransport
+    }
+  , function sourceRejected(reason) {
+      moduleTransport = MODULE_NOT_FOUND_ERROR
+        .replace('{{id}}', options.id)
+        .replace('{{path}}', options.path)
+      return moduleTransport
+    }
+  )
+}
+ModuleTransport.prototype =
+{ constructor: ModuleTransport
+  // Analyzes given module source and returns array of top id's that the module
+  // depends on.
+, get dependencies() {
+    // strip out comments to ignore commented `require` calls.
+    var source = this.source.replace(COMMENTS_MATCH, '')
+    ,   dependencies = []
+    ,   dependency
+    while (dependency = REQUIRE_MATCH.exec(source)) {
+      dependency = dependency[3]
+      dependencies.push
+        ('.' == dependency.charAt(0) ? fs.join(this.id, dependency): dependency)
+    }
+    return dependencies
+  }
+, toString: function toString() {
+    var dependencies =
+      this.dependencies.length ? '"' + this.dependencies.join('","') + '"' : ''
+    return TRANSPORT_WRAPPER.
+      replace('{{id}}', this.id).
+      replace('{{dependencies}}', dependencies).
+      replace('{{source}}', this.source)
+  }
+}
 
 exports.Module = function Module(options) {
   return ModuleTrait.create(options)
@@ -80,18 +127,10 @@ var ModuleTrait = Trait(
 , get transport() {
     var id = this.id
     ,   path = String(this.path)
-    return when
-    ( this.source
-    , function sourceResolved(content) {
-        return TRANSPORT_WRAPPER.replace('{{id}}', id)
-          .replace('{{source}}', content)
-      }
-    , function(reason) {
-        var content = MODULE_NOT_FOUND_ERROR.replace('{{id}}', id)
-          .replace('{{path}}', path)
-        return TRANSPORT_WRAPPER.replace('{{id}}', id)
-          .replace('{{source}}', content)
-      }
-    )
+    return ModuleTransport(
+    { id: this.id
+    , path: String(this.path)
+    , source: this.source
+    })
   }
 })
