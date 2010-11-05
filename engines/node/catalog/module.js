@@ -29,7 +29,7 @@ var ModuleTransport = function ModuleTransport(options) {
       return moduleTransport
     }
   , function sourceRejected(reason) {
-      moduleTransport = MODULE_NOT_FOUND_ERROR
+      moduleTransport.source = MODULE_NOT_FOUND_ERROR
         .replace('{{id}}', options.id)
         .replace('{{path}}', options.path)
       return moduleTransport
