@@ -35,7 +35,7 @@ exports['test catalog'] = function(assert, done) {
       )
       assert.ok('bar' in packages, 'expected package is in catalog')
 
-      var m1 = catalog.module('bar/foo.js')
+      var m1 = catalog.module('bar/foo')
       assert.module
       ( m1
       , { id: 'bar/foo'

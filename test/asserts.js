@@ -9,16 +9,14 @@ exports.Assert = function Assert() {
 var AssertDescriptor =
 { module: { value: function module(actual, expected, message) {
     this.deepEqual
-    ( { id: actual.id
-      , packageName: actual.packageName
+    ( { packageName: actual.packageName
       , version: actual.version
       , path: String(actual.path)
       , relativeId: actual.relativeId
       }
-    , { id: expected.id
-      , packageName: expected.name
+    , { packageName: expected.name
       , version: expected.version || ''
-      , relativeId: expected.relativeId || expected.id.substr(expected.id.indexOf('/') + 1)
+      , relativeId: expected.relativeId || actual.id.substr(actual.id.indexOf('/') + 1)
       , path: String(expected.dir.join
         ( expected.name
         , expected.version || 'active'
@@ -62,6 +60,7 @@ var AssertDescriptor =
           }
           eval(source)
         } catch(e) {
+          console.error(e)
           assert.fail({ message: message || e.message })
         }
       }

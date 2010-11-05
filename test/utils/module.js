@@ -8,13 +8,12 @@ exports.Assert = require('../asserts').Assert
 exports['test regular module'] = function(assert) {
   assert.module
   ( Module(
-    { url: 'bar/module/xhr+eval.js'
+    { id: 'bar/module/xhr+eval'
     , packages: { bar: { name: 'bar' } }
     , packagesPath: npmDir
     })
   , { dir: npmDir
     , name: 'bar'
-    , id: 'bar/module/xhr+eval'
     , path: './lib/module/xhr+eval.js'
     , relative: 'module/xhr+eval'
     }
@@ -25,12 +24,11 @@ exports['test regular module'] = function(assert) {
 exports['test main module'] = function(assert) {
   assert.module
   ( Module(
-    { url: 'bar.js'
+    { id: 'bar'
     , packages: { 'bar': { name: 'bar', main: './lib/foo' } }
     , packagesPath: npmDir
     })
   , { dir: npmDir
-    , id: 'bar'
     , main: true
     , name: 'bar'
     , path: './lib/foo.js'
@@ -40,12 +38,11 @@ exports['test main module'] = function(assert) {
 
   assert.module
   ( Module(
-    { url: 'foo.js'
-    , packages: { 'foo': { name: 'foo', main: './path/to/bar.js' } }
+    { id: 'foo'
+    , packages: { 'foo': { name: 'foo', main: './path/to/bar' } }
     , packagesPath: npmDir
     })
   , { dir: npmDir
-    , id: 'foo'
     , name: 'foo'
     , main: true
     , path: './path/to/bar.js'
@@ -57,14 +54,13 @@ exports['test main module'] = function(assert) {
 exports['test versioned package'] = function(assert) {
   assert.module
   ( Module(
-    { url: 'bar@0.1.1/baz.js'
+    { id: 'bar@0.1.1/baz'
     , packages: { bar: { name: 'bar' } }
     , packagesPath: npmDir
     })
   , { dir: npmDir
     , name: 'bar'
     , version: '0.1.1'
-    , id: 'bar@0.1.1/baz'
     , path: './lib/baz.js'
     }
   , 'module with versioned package name'
@@ -74,7 +70,7 @@ exports['test versioned package'] = function(assert) {
 exports['test custom lib'] = function(assert) {
   assert.module
   ( Module(
-    { url: 'bar/test.js'
+    { id: 'bar/test'
     , packages: { bar: { name: 'bar', directories: { lib: 'engine/teleport' } } }
     , packagesPath: npmDir
     })
@@ -92,13 +88,12 @@ exports['test module alias'] = function(assert) {
 
   assert.module
   ( Module(
-    { url: 'bar/test.js'
+    { id: 'bar/test'
     , packages: packages
     , packagesPath: npmDir
     })
   , { dir: npmDir
     , name: 'bar'
-    , id: 'bar/test'
     , path: './lib/test.js'
     }
   , 'non aliased module form package with aliases'
@@ -106,13 +101,12 @@ exports['test module alias'] = function(assert) {
 
   assert.module
   ( Module(
-    { url: 'bar/foo.js'
+    { id: 'bar/foo'
     , packages: packages
     , packagesPath: npmDir
     })
   , { dir: npmDir
     , name: 'bar'
-    , id: 'bar/foo'
     , path: './path/to/foo.js'
     }
   , 'aliased module'
