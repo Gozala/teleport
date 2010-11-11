@@ -1,5 +1,5 @@
-All you need is [npm] and everything will that easy!
+All you need is [npm] and everything will get that easy!
 
-        npm install teleport
+    npm install teleport
 
 [npm]:http://www.npmjs.org/

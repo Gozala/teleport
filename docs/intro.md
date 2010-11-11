@@ -1,14 +1,18 @@
-Teleport is an attempt to bring all the innovation and awesomeness of
-JavaScript on server back to the browser.
+Teleport is a tool that enables you to write interoperable modules across
+server and browser without any dependency hassles.
 
-![download jQuery](resources/images/get-jquery.gif)
+With a rising popularity of JavaScript on the server we got some amazing tools.
+[npm] is great example, which allows you to to install and publish [node]
+libraries. It also manages dependencies and does some other cool stuff.  
+So far only node folks had a pleasure of using it. Teleport is all about
+bringing this awesomeness to the browsers.
 
-Can you tell how many times have you pressed button like the one above?
-Well there is no reason to do that anymore. With a [CommonJS] we finally
-got modules, which can be loaded in variety of platforms. With [npm] we are
-able to manage JavaScript libraries for node without a need of visiting any
-website. Can't we have this awesome experience while developing on the
-browsers side ?
+Writing web applications with teleport is nice & easy it does not gets in the
+way and preserves development ergonomics we are so used to: Hit refresh and
+see your changes!!
 
+All you need to know to get started is under the [guide](#guide) section.
+
+[node]:http://nodejs.org/
 [npm]:http://www.npmjs.org/ "Node package manager"
 [CommonJS]:http://www.commonjs.org
