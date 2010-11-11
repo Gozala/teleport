@@ -28,7 +28,7 @@
     { "dependencies":
       { "markdown-js": ">=0.0.3"
       , "promised-http": ">=0.0.2"
-      , "q": ">=0.1.0"
+      , "q": ">=0.1.5"
       }
     , "directories": { "lib": "./engines/teleport" }
     }
