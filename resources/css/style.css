@@ -14,8 +14,18 @@ body {
   margin: 30px;
 }
 
-.fixed {
-  font-family: monaco, 'Bitstream Vera Sans Mono','Courier', monospace
+.fixed, code, pre {
+  font-family: Monaco, monospace;
+  color: #AAA;
+  font-size: 12px;
+}
+pre {
+  padding: 10px;
+  background: -moz-linear-gradient(0% 100% 0deg, rgba(0, 0, 0, 0.2), transparent 90%);
+  background: -webkit-gradient(linear, 0% 0%, 100% 0%, from(rgba(0, 0, 0, 0.2)), to(transparent));
+  -webkit-border-radius: 10px;
+  -moz-border-radius: 10px;
+  border-radius: 10px;
 }
 .logo {
   margin: 0 -10px -20px -10px;
@@ -36,9 +46,19 @@ h1 {
     hsla(200,100%,50%,.2) 0 -5px 20px,
     rgba(0,0,0,0.9) -10px 20px 25px;
 }
+
 a {
   color: white;
+}
+a:hover {
   text-decoration: none;
+}
+
+header a {
+  text-decoration: none;
+}
+header a:hover {
+  text-decoration: underline;
 }
 
 ul, li {
