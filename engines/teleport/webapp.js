@@ -1,7 +1,6 @@
 'use strict'
 
 var markdown = require('markdown-js')
-,   mustache = require('mustache')
 ,   http = require('promised-http')
 ,   q = require('q'), when = q.when
 ,   system = require('system')
