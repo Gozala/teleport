@@ -13,11 +13,11 @@
 , "overlay":
   { "node":
     { "dependencies":
-      { "test": ">=0.0.8"
-      , "system": ">=0.0.1"
+      { "test": ">=0.0.10"
+      , "system": ">=0.0.4"
       , "q": ">=0.1.0"
-      , "promised-fs": ">=0.0.3"
-      , "promised-utils": ">=0.0.2"
+      , "promised-fs": ">=0.0.6"
+      , "promised-utils": ">=0.0.3"
       }
     , "directories":
       { "lib": "./engines/node"
@@ -26,9 +26,7 @@
     }
   , "teleport":
     { "dependencies":
-      { "backbone": ">=0.1.0"
-      , "mustache": ">=0.3.0"
-      , "markdown-js": ">=0.0.3"
+      { "markdown-js": ">=0.0.3"
       , "promised-http": ">=0.0.2"
       , "q": ">=0.1.0"
       }
