@@ -6,12 +6,15 @@ var markdown = require('markdown-js')
 ,   q = require('q'), when = q.when
 ,   system = require('system')
 
+function load(data) {
+  var content = when(http.request('docs/' + data + '.md'), markdown.parse)
+  ,   element = document.getElementById(data)
+  when(content, function(content) { element.innerHTML = content })
+}
+
 exports.main = function main() {
-  system.stdin.on('data', function(data) {
-    var content = when(http.request('docs/' + data + '.md'), markdown.parse)
-    ,   element = document.getElementById(data)
-    when(content, function(content) { element.innerHTML = content })
-  })
+  system.stdin.on('data', load)
+  if (window.location.hash) load(window.location.hash.substr(1))
 }
 
 if (require.main == module) exports.main()
