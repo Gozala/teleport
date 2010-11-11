@@ -1,0 +1,5 @@
+{ "name": "missing-dependency"
+, "version": "0.0.1"
+, "dependencies": { "non-existing": ">=0.0.5" }
+, "engines": { "teleport": ">=0.2.0" }
+}

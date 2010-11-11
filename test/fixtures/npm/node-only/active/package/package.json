@@ -1,0 +1,5 @@
+{ "name": "node-only"
+, "version": "0.0.1"
+, "directories": { "lib": "./lib" }
+, "engines": { "node": ">=0.2.0" }
+}

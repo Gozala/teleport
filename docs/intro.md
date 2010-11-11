@@ -11,8 +11,7 @@ Writing web applications with teleport is nice & easy it does not gets in the
 way and preserves development ergonomics we are so used to: Hit refresh and
 see your changes!!
 
-All you need to know to get started is under
-[the link](http://jeditoolkit.com/teleport#guide).
+All you need to know to get started is under the [guide](#guide) section.
 
 [node]:http://nodejs.org/
 [npm]:http://www.npmjs.org/ "Node package manager"
