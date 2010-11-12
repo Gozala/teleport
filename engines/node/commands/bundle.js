@@ -30,7 +30,7 @@ exports.bundle = function bundle(main) {
         )
       }
     )
-  , console.log.bind(console, 'Done')
+  , function done() { console.log('Done') }
   , console.error
   )
 }
