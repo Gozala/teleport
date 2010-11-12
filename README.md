@@ -12,8 +12,10 @@ way and preserves development ergonomics we are so used to: Hit refresh and
 see your changes!!
 
 All you need to know to get started is under
-[the link](http://jeditoolkit.com/teleport#guide).
+[the link](http://jeditoolkit.com/teleport#guide).  
+Here is the [mailing list] if there is something you want to discuss.
 
+[mailing list]:https://groups.google.com/group/teleportjs
 [node]:http://nodejs.org/
 [npm]:http://www.npmjs.org/ "Node package manager"
 [CommonJS]:http://www.commonjs.org
