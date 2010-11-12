@@ -1,5 +1,5 @@
 { "name": "teleport"
-, "version": "0.2.0"
+, "version": "0.2.1"
 , "description": "CommonJS modules 1.0 loader for browsers."
 , "homepage": "http://github.com/Gozala/teleport/"
 , "keywords": ["commonjs", "modules", "require"]
