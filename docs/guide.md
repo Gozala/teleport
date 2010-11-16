@@ -35,15 +35,8 @@ Finally we need to link our package to the npm registry by running command:
 
     npm link
 
-from the `"hello-world"` directory.
-
-## Installing your package dependencies ##
-
-You probably have noticed that [mustache] library is listed under the
-`dependencies` field, that's because our app is going to depend on it.
-Again we will use npm to install all our dependencies:
-
-    npm install mustache
+from the `"hello-world"` directory. Please note that [mustache] library listed
+under the `dependencies` field will be installed by npm during linking.
 
 ## Writing application ##
 
