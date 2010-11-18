@@ -1,7 +1,6 @@
 'use strict'
 
 var fs = require('promised-fs')
-,   npm = require('npm')
 ,   when = require('q').when
 ,   Promised = require('promised-utils').Promised
 ,   Module = require('./catalog/module').Module
@@ -83,7 +82,18 @@ exports.Catalog = function Catalog(path) {
   })
   // Building a catalog from all the (_nested_) dependencies
   return when(dependencies(main, {}), function catalogResolved(packages) {
-    return CatalogTrait.create({ packages: packages, root: root })
+    // Ugly hack to apply changes if dependencies changed.
+    // Only changed part of the catalog should be recrated.
+    Object.keys(packages).forEach(function(name) {
+      require('fs').watchFile(String(root.join(name, descriptorPath)), function() {
+        console.log('watched file changed', name)
+        when(dependencies(parse(packageRoot.join(DESCRIPTOR_FILE).read()), catalog.packages), function () {
+          console.log(packages)
+        })
+      })
+    })
+    var catalog = CatalogTrait.create({ packages: packages, root: packageRoot })
+    return catalog;
   })
 }
 
