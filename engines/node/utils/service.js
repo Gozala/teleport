@@ -12,6 +12,8 @@ var http = require('http')
 ,   lib = fs.Path(module.filename).directory().directory()
 ,   core = lib.join(CONST.TELEPORT_CORE_FILE).read()
 ,   engine = lib.join(CONST.ENGINES_DIR, CONST.TELEPORT_ENGINE_FILE).read()
+,   playground = lib.join(CONST.TELEPORT_PLAYGROUND).read()
+,   root = fs.Path(CONST.NPM_DIR)
 
 exports.activate = function activate() {
   // creating a catalog
@@ -53,7 +55,9 @@ exports.activate = function activate() {
         }
       , function(e) {
           response.writeHead(404)
-          response.end()
+          when(playground, function(content) {
+            response.end(content)
+          })
         }
       )
     }

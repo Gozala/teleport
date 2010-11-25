@@ -12,6 +12,7 @@ exports.INDEX_FILE = 'index.html'
 exports.DESCRIPTOR_FILE = 'package.json'
 exports.TELEPORT_CORE_FILE = 'teleport.js'
 exports.TELEPORT_ENGINE_FILE = 'teleport-service.js'
+exports.TELEPORT_PLAYGROUND = '../../resources/pages/404.html'
 exports.NPM_DIR = require('npm').dir
 
 exports.ENGINES_DIR = 'engine'
