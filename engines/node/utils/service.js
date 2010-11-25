@@ -37,6 +37,23 @@ exports.activate = function activate() {
         }
       , console.error
       )
+    } else if (path == '/packages') {
+      when
+      ( root.list()
+      , function(entries) {
+          response.writeHead(200, { 'Content-Type': 'application/json' })
+          registry = {}
+          entries.forEach(function register(name) {
+            if ('.' == name.charAt(0)) return
+            registry[name] = path + '/' + name + '@active'
+          })
+          response.end(JSON.stringify(registry, null, 4))
+        }
+      , function(e) {
+          response.writeHead(500)
+          response.end(JSON.stringify({ error: String(e.message) }, null, 4))
+        }
+      )
     } else if (0 == index) {
       var id = path.substr(CONST.PACKAGES_URI_PATH.length)
       id = id.substr(0, id.length - 3)
