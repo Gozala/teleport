@@ -128,3 +128,15 @@ var ModuleTrait = Trait(
     })
   }
 })
+
+
+exports.PackageModules = Trait(
+{ path: Trait.required
+, getModule: function getModule(id) {
+    return Module(
+    { id: id
+    , packages: this.descriptor.dependencies
+    , packagesPath: 'path/to/registry/'
+    })
+  }
+})

@@ -75,17 +75,32 @@ var dependencies = Promised(function dependencies(meta, packages, callback) {
 // is not passed finds package descriptor under the current working directory
 // and returns metadata for it.
 exports.Catalog = function Catalog(path) {
-  var packageRoot = null
+  var packageRoot = path
   // Parsing `package.json` for the package under the root
-  var main = when(packagePath(path), function despriptorResolved(path) {
-    return parse((packageRoot = path).join(DESCRIPTOR_FILE).read())
-  })
+  var main = when
+  ( packagePath(path)
+  , function packageFound(path) {
+      return parse((packageRoot = path).join(DESCRIPTOR_FILE).read())
+    }
+  , function packageNotFound(path) {
+      packageRoot = root.join('teleport', VERSION, PREFIX)
+      return (
+      { name: 'teleport'
+      , descripton: 'Teleport application runner'
+      , version: '0.0.1'
+      , dependencies:
+        { 'q': '>=0.1.5'
+        }
+      , directories: { lib: 'engines/teleport' }
+      })
+    }
+  )
   // Building a catalog from all the (_nested_) dependencies
   return when(dependencies(main, {}), function catalogResolved(packages) {
     // Ugly hack to apply changes if dependencies changed.
     // Only changed part of the catalog should be recrated.
     Object.keys(packages).forEach(function(name) {
-      require('fs').watchFile(String(packageRoot.join(name, descriptorPath)), function() {
+      require('fs').watchFile(String(root.join(name, descriptorPath)), function() {
         console.log('watched file changed', name)
         when(dependencies(parse(packageRoot.join(DESCRIPTOR_FILE).read()), catalog.packages), function () {
           console.log(packages)
@@ -104,5 +119,3 @@ var CatalogTrait = Trait(
     return Module({ id: id, packages: this.packages, packagesPath: root })
   }
 })
-
-
