@@ -75,17 +75,17 @@ var dependencies = Promised(function dependencies(meta, packages, callback) {
 // is not passed finds package descriptor under the current working directory
 // and returns metadata for it.
 exports.Catalog = function Catalog(path) {
-  var root = null
+  var packageRoot = null
   // Parsing `package.json` for the package under the root
   var main = when(packagePath(path), function despriptorResolved(path) {
-    return parse((root = path).join(DESCRIPTOR_FILE).read())
+    return parse((packageRoot = path).join(DESCRIPTOR_FILE).read())
   })
   // Building a catalog from all the (_nested_) dependencies
   return when(dependencies(main, {}), function catalogResolved(packages) {
     // Ugly hack to apply changes if dependencies changed.
     // Only changed part of the catalog should be recrated.
     Object.keys(packages).forEach(function(name) {
-      require('fs').watchFile(String(root.join(name, descriptorPath)), function() {
+      require('fs').watchFile(String(packageRoot.join(name, descriptorPath)), function() {
         console.log('watched file changed', name)
         when(dependencies(parse(packageRoot.join(DESCRIPTOR_FILE).read()), catalog.packages), function () {
           console.log(packages)
