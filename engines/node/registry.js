@@ -7,7 +7,6 @@ var fs =  require('promised-fs')
 ,   when = require('q').when
 ,   Promised = require('promised-utils').Promised
 ,   Module = require('./catalog/module').Module
-,   PromisedTrait = require('promised-traits').PromisedTrait
 ,   Package = require('teleport/package').Package
 
 ,   EXTENSION = CONST.EXTENSION
@@ -24,18 +23,30 @@ var fs =  require('promised-fs')
 ,   root = fs.Path(CONST.NPM_DIR)
 ,   DESCRIPTOR_PATH = fs.join(VERSION, PREFIX, CONST.DESCRIPTOR_FILE)
 
-var RegistryTrait = PromisedTrait(
-{ packages: PromisedTrait.required
-, getPackage: function getPackage(name) {
-    return this.packages[name]
+var RegistryTrait = Trait(
+{ packages: Trait.required
+, root: root
+, toJSON: function toJSON() {
+    var json = {}
+    ,   packages = this.packages
+    for (var name in packages) json[name] = packages[name].invoke('toJSON')
+    return json
   }
 })
-exports.Registry = function Registry() {
-  return RegistryTrait.create(when(root.list(), function(list) {
-    var packages = {}
-    list.forEach(function(name) {
-      if ('.' !== name.charAt(0)) packages[name] = Package({ name: name })
+exports.Registry = function Registry(path) {
+  var registry = Object.create(Registry.prototype)
+  registry.packages = {}
+  if (path) registry.root = fs.path(path)
+  registry = RegistryTrait.create(registry)
+  return Promised(when(registry.root.list(), function onEntries(entries) {
+    var packages = registry.packages
+    entries.forEach(function(name) {
+      if ('.' === name.charAt(0)) return
+      packages[name] = Package(
+      { name: name
+      , registry: registry
+      })
     })
-    return { packages: packages }
+    return registry
   }))
 }
