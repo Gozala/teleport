@@ -6,8 +6,7 @@ var fs =  require('promised-fs')
 ,   CONST = require('teleport/strings')
 ,   when = require('q').when
 ,   Promised = require('promised-utils').Promised
-,   PromisedTrait = require('promised-traits').PromisedTrait
-,   Module = require('./catalog/module').Module
+,   PackageModules = require('./catalog/module').PackageModules
 
 ,   EXTENSION = CONST.EXTENSION
 ,   SEPARATOR = CONST.SEPARATOR
@@ -21,24 +20,24 @@ var fs =  require('promised-fs')
 ,   COMMENTS_MATCH = CONST.COMMENTS_MATCH
 ,   REQUIRE_MATCH = CONST.REQUIRE_MATCH
 ,   root = fs.Path(CONST.NPM_DIR)
-,   DESCRIPTOR_PATH = fs.join(VERSION, PREFIX, CONST.DESCRIPTOR_FILE)
+,   DESCRIPTOR_PATH = fs.join(VERSION, PREFIX)
+,   DESCRIPTOR_FILE = CONST.DESCRIPTOR_FILE
 ,   JSON_PARSE_ERROR = 'Failed to parse package descriptor: '
 
 // Function takes path to the package descriptor parses it. It also applies overlay
 // metadata. This is a promised function so it can take promises and will
 // return promise of parsed json back.
 function Descriptor(options) {
-  return when(fs.read(options.path), function fileRead(content) {
+  return when(fs.path([options.path, DESCRIPTOR_FILE]).read(), function fileRead(content) {
       var descriptor = {}
       try {
         descriptor = Object.create(JSON.parse(content))
       } catch (error) {
-        console.error
-        ( JSON_PARSE_ERROR
-        , error.message
-        , options.name
-        , options.path
-        )
+        var errors = options.errors || (options.errors = [])
+        errors.push(
+        { type: JSON_PARSE_ERROR
+        , error: error
+        })
       }
       // If 'teleport' overlay is found return immediately.
       if ('overlay' in descriptor && 'teleport' in descriptor.overlay) {
@@ -49,23 +48,31 @@ function Descriptor(options) {
   })
 }
 
-var PackageTrait = PromisedTrait(
-{ path: Trait.required
-, descriptor: Trait.required
-, get name() { return this.descriptor.name }
-, get dependencies() { return this.descriptor.dependencies }
-, get version() { return this.descriptor.version }
-, get main() { return this.descriptor.main }
-, get modules() { return this.descriptor.modules }
-, get directories() { return this.descriptor.directories }
-, toJSON: function toJSON() { return Object.getPrototypeOf(this.descriptor) }
-, getModule: function getModule(id) {
-    return Module({ id: id, packages: this.packages, packagesPath: root })
-  }
-, getContent: function getContent(relativePath) {
-    return fs.path(this.path, relativePath).read()
-  }
-})
+var PackageTrait = Trait
+( PackageModules
+, Trait(
+  { path: Trait.required
+  , registry: Trait.required
+  , descriptor: Trait.required
+  , get name() { return this.descriptor.name }
+  , get dependencies() {
+      var dependencies = this.descriptor.dependencies
+        , packages = this.registry.packages
+        , result = {}
+      for (var name in dependencies) result[name] = packages.name
+      return result
+    }
+  , get version() { return this.descriptor.version }
+  , get main() { return this.descriptor.main }
+  , get modules() { return this.descriptor.modules }
+  , get directories() { return this.descriptor.directories }
+  , toJSON: function toJSON() { return Object.getPrototypeOf(this.descriptor) }
+  , getContent: function getContent(relativePath) {
+      path = fs.path([this.path, relativePath])
+      return path.read()
+    }
+  })
+)
 
 /**
  * Package class can be used to create instances that expose promise based API
@@ -83,6 +90,8 @@ function Package(options) {
   // If neither path, name or descriptor was passed throwing an exception since
   // we can't really build packages wrapper from it.
   else if (!('descriptor' in options)) throw new Error('Wrong options were passed')
-  return PackageTrait.create(options)
+  return Promised(when(options, function onOptions(options) {
+    return PackageTrait.create(options)
+  }))
 }
 exports.Package = Package
