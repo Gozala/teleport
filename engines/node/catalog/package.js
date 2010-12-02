@@ -19,6 +19,6 @@ exports.packagePath = function packagePath(path) {
 
 exports.descriptor = function descriptor() {
   return when(exports.packagePath(), function(path) {
-    path.join(DESCRIPTOR_FILE).read()
+    return path.join(DESCRIPTOR_FILE).read()
   })
 }
