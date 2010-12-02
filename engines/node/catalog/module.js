@@ -106,7 +106,7 @@ exports.PackageModules = Trait(
     var packageName = getPackageName(id)
 
     if (packageName in this.dependencies)
-      source = this.dependencies[packageName].invoke('getModule', [id])
+      source = this.dependencies[packageName].invoke('getModuleSource', [id])
     else if (packageName !== this.name)
       source = PACKAGE_NOT_FOUND_ERROR.replace('{{name}}', packageName)
     else source = this.getContent(this.getModulePath(id))
