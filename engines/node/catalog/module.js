@@ -98,6 +98,7 @@ exports.PackageModules = Trait(
         relativeId = getPackageRelativeId(id)
         if (modules && (path = modules[relativeId])) path
         else path = fs.join((descriptor.directories || {}).lib || LIB, relativeId)
+        if ('.js' !== path.substr(-3)) path += '.js'
       }
     }
     return path
