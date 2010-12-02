@@ -59,7 +59,7 @@ var PackageTrait = Trait
       var dependencies = this.descriptor.dependencies
         , packages = this.registry.packages
         , result = {}
-      for (var name in dependencies) result[name] = packages.name
+      for (var name in dependencies) result[name] = packages[name]
       return result
     }
   , get version() { return this.descriptor.version }
