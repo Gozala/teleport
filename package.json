@@ -30,6 +30,7 @@
       , "promised-http": ">=0.0.2"
       , "q": ">=0.1.5"
       }
+    , "main": "./engines/teleport/teleport.js"
     , "directories": { "lib": "./engines/teleport" }
     }
   }
