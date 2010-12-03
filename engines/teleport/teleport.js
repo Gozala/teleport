@@ -95,6 +95,10 @@ define('teleport/engine', function(require, exports, module, undefined) {
   ,   descriptors = {}
   ,   modules = {}
   ,   packages = {}
+  ,   isFirefox = 0 <= navigator.userAgent.toLowerCase().indexOf('firefox')
+  ,   SCRIPT_TYPE = 'application/javascript'
+
+  if (isFirefox) SCRIPT_TYPE += ';version=1.8'
 
   /**
    * Resolves relative module ID to an absolute id.
@@ -124,7 +128,7 @@ define('teleport/engine', function(require, exports, module, undefined) {
   }
 
   function resolveURL(id) {
-    return 'packages/' + id + '.js'
+    return 'packages/' + id + '.js?transport'
   }
 
   // Tracks module loading. Once it's loaded all the dependencies are analyzed
@@ -181,7 +185,7 @@ define('teleport/engine', function(require, exports, module, undefined) {
   function fetch(factory) {
     var module = document.createElement('script')
     module.setAttribute('id', factory.id)
-    module.setAttribute('type', 'text/javascript')
+    module.setAttribute('type', SCRIPT_TYPE)
     module.setAttribute('data-loader', 'teleport')
     module.setAttribute('src', factory.url)
     document.getElementsByTagName('head')[0].appendChild(module)
