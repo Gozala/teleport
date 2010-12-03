@@ -141,7 +141,7 @@ function start(name) {
             response.end(content)
           }
         , function onFailed(content) {
-            response.writeHead(400)
+            response.writeHead(404)
             console.error(content)
             response.end(content.message)
           }
