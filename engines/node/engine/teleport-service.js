@@ -1,12 +1,16 @@
 define('teleport/engine', function(require, exports, module, undefined) {
   'use strict'
-  
+
   var teleport = require('teleport/core')
-  
+
   ,   factories = teleport.factories
   ,   descriptors = {}
   ,   modules = {}
   ,   packages = {}
+  ,   isFirefox = 0 <= navigator.userAgent.toLowerCase().indexOf('firefox')
+  ,   SCRIPT_TYPE = 'application/javascript'
+
+  if (isFirefox) SCRIPT_TYPE += ';version=1.8'
 
   /**
    * Resolves relative module ID to an absolute id.
@@ -93,7 +97,7 @@ define('teleport/engine', function(require, exports, module, undefined) {
   function fetch(factory) {
     var module = document.createElement('script')
     module.setAttribute('id', factory.id)
-    module.setAttribute('type', 'text/javascript')
+    module.setAttribute('type', SCRIPT_TYPE)
     module.setAttribute('data-loader', 'teleport')
     module.setAttribute('src', factory.url)
     document.getElementsByTagName('head')[0].appendChild(module)
