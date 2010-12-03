@@ -98,19 +98,24 @@ exports.PackageModules = Trait(
         relativeId = getPackageRelativeId(id)
         if (modules && (path = modules[relativeId])) path
         else path = fs.join((descriptor.directories || {}).lib || LIB, relativeId)
-        if ('.js' !== path.substr(-3)) path += '.js'
       }
+      if ('.js' !== path.substr(-3)) path += '.js'
     }
     return path
   }
 , getModuleSource: function getModuleSource(id) {
     var packageName = getPackageName(id)
+      , source
 
-    if (packageName in this.dependencies)
-      source = this.dependencies[packageName].invoke('getModuleSource', [id])
-    else if (packageName !== this.name)
-      source = PACKAGE_NOT_FOUND_ERROR.replace('{{name}}', packageName)
-    else source = this.getContent(this.getModulePath(id))
+    if (packageName === this.name)
+      source = this.getContent(this.getModulePath(id))
+    else
+      source = when(this.dependencies, function(dependencies) {
+        var dependency = dependencies[packageName]
+        if (dependency) source = dependency.invoke('getModuleSource', [id])
+        else source = PACKAGE_NOT_FOUND_ERROR.replace('{{name}}', packageName)
+        return source
+      })
     return source
   }
 })

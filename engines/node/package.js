@@ -5,7 +5,7 @@ var fs =  require('promised-fs')
 ,   Trait = require('light-traits').Trait
 ,   CONST = require('teleport/strings')
 ,   when = require('q').when
-,   Promised = require('promised-utils').Promised
+,   pu = require('promised-utils'), Promised = pu.Promised, all = pu.all
 ,   PackageModules = require('./catalog/module').PackageModules
 
 ,   EXTENSION = CONST.EXTENSION
@@ -44,6 +44,7 @@ function Descriptor(options) {
         var teleport = descriptor.overlay.teleport
         for (var key in teleport) descriptor[key] = teleport[key]
       }
+      if (!('dependencies' in descriptor)) descriptor.dependencies = {}
       return Object.create(options, { descriptor: { value: descriptor } })
   })
 }
@@ -56,11 +57,26 @@ var PackageTrait = Trait
   , descriptor: Trait.required
   , get name() { return this.descriptor.name }
   , get dependencies() {
-      var dependencies = this.descriptor.dependencies
-        , packages = this.registry.packages
-        , result = {}
-      for (var name in dependencies) result[name] = packages[name]
-      return result
+      var value
+        , dependencies
+        , nestedDependencies
+        , name
+        , key
+        , packages
+
+      if (this._dependencies) return this._dependencies
+      value = Object.create(nestedDependencies = {})
+      packages = this.registry.packages
+      dependencies = Object.keys(this.descriptor.dependencies)
+      dependencies = dependencies.map(function(name) {
+        value[name] = packages[name]
+        return when(packages[name].get('dependencies'), function(dependencies) {
+          for (key in dependencies) nestedDependencies[key] = packages[key]
+        }, function() {})
+      })
+      return Promised(when(all(dependencies), function() {
+        return this._dependencies = value
+      }))
     }
   , get version() { return this.descriptor.version }
   , get main() { return this.descriptor.main }
