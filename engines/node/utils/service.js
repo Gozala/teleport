@@ -10,6 +10,7 @@ var http = require('http')
 ,   Catalog = require('teleport/catalog').Catalog
 ,   activePackage = require('teleport/catalog/package').descriptor
 ,   CONST = require('teleport/strings')
+,   parseURL = require('url').parse
 
 ,   server = http.createServer()
 ,   lib = fs.Path(module.filename).directory().directory()
@@ -20,10 +21,68 @@ var http = require('http')
 
 var registry = Registry();
 
-function getPackageName(path, active) {
-  var components = path.split('/')
-  if (components[1] === 'packages') return components[2]
-  else activate
+
+function isUnderPackages(path) {
+  return 1 >= path.indexOf('packages/') && 10 < path.length
+}
+
+function redirectTo(url, response) {
+  response.writeHead(302, { 'Location': url })
+  response.end()
+}
+
+function makePackageRedirectURL(name, url) {
+  var redirectURL = '/packages/' + name
+  if (url !== '/packages' && url !== '/packages/') redirectURL += url
+  return redirectURL
+}
+
+function isPathToFile(path) {
+  return 0 <= String(path).substr(path.lastIndexOf('/') + 1).indexOf('.')
+}
+function compeletPath(path) {
+  path = String(path)
+  if (!isPathToFile(path)) {
+    if ('/' !== path.charAt(path.length - 1)) path += '/'
+    path += 'index.html'
+  }
+  return path
+}
+function normalizePath(path) {
+  if (!isPathToFile(path) && '/' !== path.charAt(path.length - 1)) path += '/'
+  return path
+}
+
+function getPackageName(path) {
+  path = String(path).replace('/packages/', '')
+  return path.substr(0, path.indexOf('/'))
+}
+
+function getPackageRelativePath(path, name) {
+  var packageRoot = '/packages/'
+  if (name) packageRoot += name
+  return String(path).replace(packageRoot, '')
+}
+
+function isJSPath(path) {
+  return '.js' === String(path).substr(-3)
+}
+function removeJSExtension(path) {
+  return isJSPath(path) ? path.substr(0, path.length - 3) : path
+}
+function isModulePath(path) {
+  return isUnderPackages(path) && isJSPath(path)
+}
+
+function getModuleId(path) {
+  return removeJSExtension(getPackageRelativePath(path))
+}
+function getContentPath(path) {
+  return String(path).substr(1)
+}
+
+function isTransportRequest(url) {
+  return 0 <= String(url.search).indexOf('transport')
 }
 
 exports.activate = function activate() {
@@ -41,42 +100,42 @@ function start(name) {
   server.listen(4747)
   console.log('Teleport is activated: http://localhost:4747/packages/' + name)
   server.on('request', function(request, response) {
-    var path = request.url.split(CONST.EOP)[0]
-    ,   index = path.indexOf(CONST.PACKAGES_URI_PATH)
+    var url = parseURL(request.url)
+      , needToWrap = isTransportRequest(url)
+      , path = url.pathname
+      , normalizedPath = normalizePath(path)
+      , index = path.indexOf(CONST.PACKAGES_URI_PATH)
+      , relativePath
+      , packageName
+      , mime
+      , content
+      , pack
 
     // If user has requested anything that is not under packages folder we
     // can't handle that so we should redirect to a packages/rest/of/path
     // instead.
-    if (0 !== index && path !== '/packages') {
-      response.writeHead(302, { 'Location': 'packages' + path })
-      response.end()
-    } else {
-      console.log('>', path)
-      var components = path.split('/')
-        , packageName = components[2]
-        , mime = mimeType(String(path))
-        , document
-        , id
-        , pack
+    if (!isUnderPackages(path))
+      redirectTo(makePackageRedirectURL(name, normalizedPath), response)
+    if (normalizedPath !== path) redirectTo(normalizedPath, response)
+    else {
+      packageName = getPackageName(path)
+      relativePath = getPackageRelativePath(compeletPath(path), packageName)
+      mime = mimeType(String(path))
 
-      path = components.slice(3).join('/')
-      if ('' === path && 2 < components.length) path += 'index.html'
+      console.log('\nrequest:', path)
 
-      console.log('package:', packageName)
-      console.log('path:', path)
-
-      if (packageName && path) {
+      if (packageName && relativePath) {
         pack = registry.get('packages').get(packageName)
-        // it's a module then
-        if (0 === path.indexOf('packages/') && mime == 'application/javascript') {
-          console.log('getModule:', path.substr(9, path.length - 9 - 3), 'package:', packageName)
-          document = pack.invoke('getModuleTransport', [path.substr(9, path.length - 9 - 3)])
+        if (isModulePath(relativePath)) {
+          console.log('module:', getModuleId(relativePath))
+          var method = needToWrap ? 'getModuleTransport' : 'getModuleSource'
+          content = pack.invoke(method, [getModuleId(relativePath)])
         } else {
-          console.log('getContent:', path, 'package:', packageName)
-          document = pack.invoke('getContent', [path])
+          console.log('content:', getContentPath(relativePath))
+          content = pack.invoke('getContent', [getContentPath(relativePath)])
         }
         when
-        ( document
+        ( content
         , function onDocument(content) {
             response.writeHead(200, { 'Content-Type': mime })
             response.end(content)
@@ -89,62 +148,8 @@ function start(name) {
         )
       } else {
         response.writeHead(404)
-        response.end('Not found')
+        response.end('Not found: ' + path)
       }
-    }
-
-    return;
-
-    if (path == CONST.ROOT_URI) path += CONST.INDEX_FILE
-    if (path == CONST.TELEPORT_URI_PATH) {
-      response.writeHead(200, { 'Content-Type': 'text/javascript' })
-      when
-      ( all([core, engine])
-      , function(content) {
-          response.end(content.join(CONST.TELEPORT_JOIN_STR))
-        }
-      , console.error
-      )
-    } else if (path == '/packages') {
-      when
-      ( root.list()
-      , function(entries) {
-          response.writeHead(200, { 'Content-Type': 'application/json' })
-          registry = {}
-          entries.forEach(function register(name) {
-            if ('.' == name.charAt(0)) return
-            registry[name] = path + '/' + name + '@active'
-          })
-          response.end(JSON.stringify(registry, null, 4))
-        }
-      , function(e) {
-          response.writeHead(500)
-          response.end(JSON.stringify({ error: String(e.message) }, null, 4))
-        }
-      )
-    } else if (0 == index) {
-      var id = path.substr(CONST.PACKAGES_URI_PATH.length)
-      id = id.substr(0, id.length - 3)
-      when(catalog.module(id).transport, function(moduleTransport) {
-        response.writeHead(200, { 'Content-Type': 'text/javascript' })
-        response.end(moduleTransport.toString())
-      })
-    } else {
-      path = catalog.root.join(path)
-      var mime = mimeType(String(path))
-      when
-      ( path.read()
-      , function(content) {
-          response.writeHead(200, { 'Content-Type': mime })
-          response.end(content)
-        }
-      , function(e) {
-          response.writeHead(404)
-          when(playground, function(content) {
-            response.end(content)
-          })
-        }
-      )
     }
   })
 }
