@@ -143,13 +143,12 @@ function start(name) {
           }
         , function onFailed(content) {
             response.writeHead(404)
-            console.error(content)
-            response.end(content.message)
+            Promised.sync(response.end).call(response, playground)
           }
         )
       } else {
         response.writeHead(404)
-        response.end('Not found: ' + path)
+        Promised.sync(response.end)(playground)
       }
     }
   })
