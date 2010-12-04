@@ -23,7 +23,8 @@ var registry = Registry();
 
 
 function isUnderPackages(path) {
-  return 1 >= path.indexOf('packages/') && 10 < path.length
+  var index = path.indexOf('packages/')
+  return index >= 0 && index <= 1 && 10 < path.length
 }
 
 function redirectTo(url, response) {
