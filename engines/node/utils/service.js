@@ -18,6 +18,8 @@ var http = require('http')
 ,   engine = lib.join(CONST.ENGINES_DIR, CONST.TELEPORT_ENGINE_FILE).read()
 ,   playground = lib.join(CONST.TELEPORT_PLAYGROUND).read()
 ,   root = fs.Path(CONST.NPM_DIR)
+,   deprecatedPath = 'packages/teleport.js'
+,   newTeleportPath = 'packages/teleport/teleport.js'
 
 var registry = Registry();
 
@@ -71,8 +73,8 @@ function isJSPath(path) {
 function removeJSExtension(path) {
   return isJSPath(path) ? path.substr(0, path.length - 3) : path
 }
-function isModulePath(path) {
-  return isUnderPackages(path) && isJSPath(path)
+function isModuleRequest(url) {
+  return 0 <= String(url.search).indexOf('module') && isJSPath(url.pathname)
 }
 
 function getModuleId(path) {
@@ -123,16 +125,17 @@ function start(name) {
       relativePath = getPackageRelativePath(compeletPath(path), packageName)
       mime = mimeType(String(path))
 
-      console.log('\nrequest:', path)
-
       if (packageName && relativePath) {
         pack = registry.get('packages').get(packageName)
-        if (isModulePath(relativePath)) {
-          console.log('module:', getModuleId(relativePath))
+        if (isModuleRequest(url)) {
           var method = needToWrap ? 'getModuleTransport' : 'getModuleSource'
           content = pack.invoke(method, [getModuleId(relativePath)])
+        // Module 'teleport' is deprecated, all the request to in in old format
+        // are redirected to a new static file 'teleport/teleport.js'.
+        } else if (relativePath.substr(1) == deprecatedPath) {
+          redirectTo('/' + newTeleportPath, response)
+          console.log('Usage of `' + deprecatedPath + '` is deprecated, please update your html to refer to `' + newTeleportPath + '` instead.')
         } else {
-          console.log('content:', getContentPath(relativePath))
           content = pack.invoke('getContent', [getContentPath(relativePath)])
         }
         when
@@ -141,7 +144,7 @@ function start(name) {
             response.writeHead(200, { 'Content-Type': mime })
             response.end(content)
           }
-        , function onFailed(content) {
+        , function onFailed(error) {
             response.writeHead(404)
             Promised.sync(response.end).call(response, playground)
           }

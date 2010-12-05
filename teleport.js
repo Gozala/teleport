@@ -128,7 +128,7 @@ define('teleport/engine', function(require, exports, module, undefined) {
   }
 
   function resolveURL(id) {
-    return 'packages/' + id + '.js?transport'
+    return 'packages/' + id + '.js?module&transport'
   }
 
   // Tracks module loading. Once it's loaded all the dependencies are analyzed
