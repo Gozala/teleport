@@ -163,7 +163,7 @@ function start(name) {
         )
       } else {
         response.writeHead(404)
-        Promised.sync(response.end)(playground)
+        Promised.sync(response.end).call(response, playground)
       }
     }
   })
