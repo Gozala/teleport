@@ -42,18 +42,20 @@
         <p>
           At this point you should be able to required module form your package
           with a following line in the javascript console:
-          <pre class="textmate-source twilight"><span class="source source_js"><span class="storage storage_type storage_type_js">var</span> myModule <span class="keyword keyword_operator keyword_operator_js">=</span> require<span class="meta meta_brace meta_brace_round meta_brace_round_js">(</span><span class="string string_quoted string_quoted_single string_quoted_single_js">'mypackage/mymodule'</span><span class="meta meta_brace meta_brace_round meta_brace_round_js">)</span></span></pre>
-          Of course you can call functions exported by your module:
-          <pre class="textmate-source twilight"><span class="source source_js">myModule.doSomething<span class="meta meta_brace meta_brace_round meta_brace_round_js">()</span></span></pre>
         </p>
+        <pre class="textmate-source twilight"><span class="source source_js"><span class="storage storage_type storage_type_js">var</span> myModule <span class="keyword keyword_operator keyword_operator_js">=</span> require<span class="meta meta_brace meta_brace_round meta_brace_round_js">(</span><span class="string string_quoted string_quoted_single string_quoted_single_js">'mypackage/mymodule'</span><span class="meta meta_brace meta_brace_round meta_brace_round_js">)</span></span></pre>
+        <p>
+          Of course you can call functions exported by your module:
+        </p>
+        <pre class="textmate-source twilight"><span class="source source_js">myModule.doSomething<span class="meta meta_brace meta_brace_round meta_brace_round_js">()</span></span></pre>
         <h2>Limitation of in-console usage</h2>
         <p>
           Since modules are loaded asynchronously <code>myModule</code> gets
           all the exports in the future turn of event loop, for that reason
           you should keep in mind that following will not work on the first
           run <i>(This applies only to in-console usage)</i>:
-          <pre class="textmate-source twilight"><span class="source source_js">require<span class="meta meta_brace meta_brace_round meta_brace_round_js">(</span><span class="string string_quoted string_quoted_single string_quoted_single_js">'mypackage/mymodule'</span><span class="meta meta_brace meta_brace_round meta_brace_round_js">)</span>.doSomething<span class="meta meta_brace meta_brace_round meta_brace_round_js">()</span></span></pre>
         </p>
+        <pre class="textmate-source twilight"><span class="source source_js">require<span class="meta meta_brace meta_brace_round meta_brace_round_js">(</span><span class="string string_quoted string_quoted_single string_quoted_single_js">'mypackage/mymodule'</span><span class="meta meta_brace meta_brace_round meta_brace_round_js">)</span>.doSomething<span class="meta meta_brace meta_brace_round meta_brace_round_js">()</span></span></pre>
       </article>
     </section>
   </body>
