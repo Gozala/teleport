@@ -123,7 +123,7 @@ function start(name) {
     else {
       packageName = getPackageName(path)
       relativePath = getPackageRelativePath(compeletPath(path), packageName)
-      mime = mimeType(String(path))
+      mime = mimeType(String(relativePath))
 
       if (packageName && relativePath) {
         pack = registry.get('packages').get(packageName)
