@@ -88,6 +88,18 @@ function isTransportRequest(url) {
   return 0 <= String(url.search).indexOf('transport')
 }
 
+function getPackageContentForPath(pack, path, packageName) {
+  var content, name
+  if (isUnderPackages(path)) {
+    name = getPackageName(path)
+    if (packageName !== name) pack = pack.get('dependencies').get(name)
+    content = getPackageContentForPath(pack, getPackageRelativePath(path, name))
+  } else {
+    content = pack.invoke('getContent', [getContentPath(path)])
+  }
+  return content
+}
+
 exports.activate = function activate() {
   return when
   ( activePackage()
@@ -136,7 +148,7 @@ function start(name) {
           redirectTo('/' + newTeleportPath, response)
           console.log('Usage of `' + deprecatedPath + '` is deprecated, please update your html to refer to `' + newTeleportPath + '` instead.')
         } else {
-          content = pack.invoke('getContent', [getContentPath(relativePath)])
+          content = getPackageContentForPath(pack, relativePath, packageName)
         }
         when
         ( content
