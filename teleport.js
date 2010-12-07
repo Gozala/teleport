@@ -1,18 +1,113 @@
-/*
+/* vim:et:ts=2:sw=2:sts=2
  * CommonJS Modules 1.1 loader.
  */
 var teleport = new function Teleport(global, undefined) {
   'use strict'
 
   var exports = this
-  ,   factories = {}
-  ,   LISTENERS = {}
+    , mainId
+    , descriptors = {}
+    , modules = {}
 
+    , MAIN_ATTR = 'data-main'
+    , SCRIPT_ELEMENT = 'script'
+    , UNDEFINED = 'undefined'
+    , SCRIPT_TYPE = 'text/javascript'
+    , BASE = (document.baseURI || document.URL).split('?')[0].split('#')[0]
+
+    , isBrowser = UNDEFINED !== typeof window && window.window === window
+    , hasNewJS = isBrowser && 0 <= navigator.userAgent.indexOf('Firefox')
+    , isWorker = !isBrowser && UNDEFINED !== typeof importScripts
+
+    if (hasNewJS) SCRIPT_TYPE = 'application/javascript;version=1.8'
+
+  function declareDependency(dependent, dependency) {
+    ;(dependency.dependents || (dependency.dependents = {}))[dependent.id] =
+      dependent
+  }
+
+  function updateDependencyStates(descriptor, dependencies) {
+    var dependency, i, ii, pending = 0
+    if (dependencies) {
+      for (i = 0, ii = dependencies.length; i < ii; i++) {
+        // Getting module descriptor for each dependency.
+        dependency = ModuleDescriptor(dependencies[i])
+        if (!dependency.ready) {
+          ++ pending
+          // Adding `descriptor` to a list of dependent modules on `dependency`.
+          declareDependency(descriptor, dependency)
+          // Start loading if not in progress already.
+          if (!dependency.loading) load(dependency)
+        }
+      }
+    }
+    // Return list of pending dependencies.
+    return pending
+  }
+
+  function moduleStateChange(descriptor) {
+   if (!descriptor.ready &&
+       descriptor.defined &&
+       0 === updateDependencyStates(descriptor, descriptor.dependencies)
+      ) onReady(descriptor)
+  }
+
+  // Notifies all the dependents that dependency is ready.
+  function updateDependents(descriptor) {
+    var dependency
+      , name
+      , dependents = descriptor.dependents
+
+    delete descriptor.dependents
+    if (dependents) {
+      // Go through each dependent and check.
+      for (name in dependents) moduleStateChange(dependents[name])
+    }
+  }
+
+  function onDefine(descriptor) {
+    // If descriptor was not ready yet.
+    descriptor.defined = true
+    moduleStateChange(descriptor)
+  }
+
+  function onReady(descriptor) {
+    console.log(descriptor.id)
+    descriptor.ready = true
+    updateDependents(descriptor)
+    if (descriptor.execute) Require()(descriptor.id)
+  }
+
+  function ModuleDescriptor(id) {
+    var descriptor
+    if (id in descriptors) descriptor = descriptors[id]
+    else {
+      descriptor = descriptors[id] =
+      { ready: false
+      , loading: false
+      , defined: false
+      , factory: null
+      , id: id
+      , url: resolveURL(id)
+      , dependencies: null
+      , dependents: null
+      }
+    }
+    return descriptor
+  }
+
+  function getMainId() {
+    var i, ii, main, elements = document.getElementsByTagName(SCRIPT_ELEMENT)
+    for (i = 0, ii = elements.length; i < ii; i++)
+      if (main = elements[i].getAttribute(MAIN_ATTR)) break
+    return main
+  }
   /**
    * Implementation of CommonJS
    * [Modules/Transport/D](http://wiki.commonjs.org/wiki/Modules/Transport/D)
    * @param {Object} descriptors
    *    Hash of module top level module id's and relevant factories.
+   *
    * @param {String[]} dependencies
    *    Top-level module identifiers corresponding to the shallow dependencies
    *    of the given module factory
@@ -20,85 +115,18 @@ var teleport = new function Teleport(global, undefined) {
    *    **Non-standard** helper utilities (improving debugging)
    */
   function define(id, dependencies, factory) {
+    var descriptor
     if (undefined == factory) {
       factory = dependencies
       dependencies = undefined
     }
-    var descriptor = factories[id] || (factories[id] = {})
-    descriptor.ready = true
-    descriptor.create = factory
+
+    descriptor = ModuleDescriptor(id)
+    descriptor.factory = factory
     descriptor.dependencies = dependencies
-    emit('define', null, descriptor)
+    onDefine(descriptor)
   }
-
-  function emit(topic, error, data) {
-    var listeners = LISTENERS[topic]
-    ,   listener
-    ,   ii
-    ,   i
-    if (listeners) {
-      listeners = listeners.slice(0)
-      for (i = 0, ii = listeners.length; i < ii; i++ ) {
-        try {
-          listeners[i](error, data)
-        } catch(e) {
-          console.error(e)
-        }
-      }
-    }
-  }
-
-  function require(id) {
-    var module = { id: id, exports: {} }
-    factories[id].create.call(NaN, require, module.exports, module)
-    return module.exports
-  }
-
-  function Require() {
-    var $ = require('teleport/engine').require
-    return exports.require = exports.require == global.require ?
-      global.require = $ : $
-  }
-  
-  exports.require = function require(id) {
-    return Require()(id)
-  }
-  exports.require.main = function(id) {
-    return Require().main(id)
-  }
-  
-  if (!global.define) global.define = define
-  if (!global.require) global.require = this.require
-
-  define('teleport/core', function(require, exports, module, undefined) {
-    exports.factories = factories
-    exports.on = function on(topic, listener) {
-      var listeners = LISTENERS[topic] || (LISTENERS[topic] = [])
-      if (0 > listeners.indexOf(listener)) listeners.push(listener)
-    }
-    exports.removeListener = function removeListener(topic, listener) {
-      var listeners = LISTENERS[topic]
-      ,   index = -1
-      if (listeners) {
-        index = listeners.indexOf(listener)
-        if (0 >= index) listeners.splice(index, 1)
-      }
-    }
-  })
-}(this)
-define('teleport/engine', function(require, exports, module, undefined) {
-  'use strict'
-  
-  var teleport = require('teleport/core')
-  
-  ,   factories = teleport.factories
-  ,   descriptors = {}
-  ,   modules = {}
-  ,   packages = {}
-  ,   isFirefox = 0 <= navigator.userAgent.toLowerCase().indexOf('firefox')
-  ,   SCRIPT_TYPE = 'application/javascript'
-
-  if (isFirefox) SCRIPT_TYPE += ';version=1.8'
+  exports.define = define
 
   /**
    * Resolves relative module ID to an absolute id.
@@ -127,112 +155,70 @@ define('teleport/engine', function(require, exports, module, undefined) {
     return base.join('/')
   }
 
-  function resolveURL(id) {
-    return 'packages/' + id + '.js?module&transport'
-  }
+  function resolveURL(id) { return 'packages/' + id + '.js?module&transport' }
 
-  // Tracks module loading. Once it's loaded all the dependencies are analyzed
-  // and loaded unless they are already loaded or fetched. Once module with
-  // all it's dependencies is loaded callback will be called.
-  function Resolver(trackedFactory, callback) {
-    var resolved = 0
-    ,   trackedDependencies = trackedFactory.dependencies
-    // Registering listener that is called whenever module is defined.
-    teleport.on('define', function resolver(error, factory) {
-      var index = trackedDependencies.indexOf(factory.id)
-      // If defined module is a dependency of tracked module
-      // or a tracked module itself:
-      if (0 <= index || trackedFactory == factory) {
-        // - Finding modules dependencies.
-        factory.dependencies.forEach(function(id) {
-          // - Registering each dependency to the tracked module factory.
-          if (0 > trackedDependencies.indexOf(id)) trackedDependencies.push(id)
-          // - Loading a dependency. If module loading fails
-          //   calling tracked module's callback with an error.
-          load(id, function(error) { if (error) return callback(error) })
-        })
-        // If all the dependencies for the tracked module are loaded calling
-        // removing a listener and callback a callback with a module factory.
-        if (trackedDependencies.length < ++resolved) {
-          teleport.removeListener('define', resolver)
-          callback(null, trackedFactory)
-        }
-      }
-    })
-  }
-
-  // loads module and all it's dependencies. Once module with all the
+  // Loads module and all it's dependencies. Once module with all the
   // dependencies is loaded callback is called.
-  function load(id, callback) {
-    var factory = factories[id] || (factories[id] =
-          { ready: false
-          , loading: false
-          , create: null
-          , id: id
-          , url: resolveURL(id)
-          , dependencies: []
-          })
-    ,   descriptor = descriptors[id]
-
-    if (factory.ready) return callback(null, factory)
-    else if (!factory.loading) {
-      factory.loading = true
-      fetch(factory)
+  function load(descriptor) {
+    if (!descriptor.loading) {
+      descriptor.loading = true
+      fetch(descriptor)
     }
-    Resolver(factory, callback)
   }
 
-  function fetch(factory) {
-    var module = document.createElement('script')
-    module.setAttribute('id', factory.id)
+  function fetch(descriptor) {
+    var module = document.createElement(SCRIPT_ELEMENT)
     module.setAttribute('type', SCRIPT_TYPE)
     module.setAttribute('data-loader', 'teleport')
-    module.setAttribute('src', factory.url)
+    module.setAttribute('data-id', descriptor.id)
+    module.setAttribute('src', descriptor.url)
     document.getElementsByTagName('head')[0].appendChild(module)
   }
 
+  function Module(id) {
+    return modules[id] || (modules[id] = { id: id, exports: {} })
+  }
+
   // `require` generator fun modules.
-  function Require(baseId) {
-    baseId = baseId || ''
+  function Require(requirerID) {
     function require(id) {
+      var module, descriptor
       // resolving relative id to an absolute id.
-      id = resolveId(id, baseId)
+      id = resolveId(id, requirerID)
       // using module if it was already created, otherwise creating one
       // and registering into global module registry.
-      var module = modules[id] || (modules[id] = { id: id, exports: {} })
-      ,   exports
-      // if module has no exports than it has not been loaded yet. In that
-      // case we need to load it.
-      if (!module.loaded) {
-        factories[id].create.call(NaN, Require(id), module.exports, module)
-        module.loaded = true
+      var module = Module(id)
+      if (!module.filename) {
+        descriptor = ModuleDescriptor(id)
+        module.filename = descriptor.url
+        descriptor.factory.call(NaN, Require(id), module.exports, module)
       }
       return module.exports
     }
     require.main = Require.main
     return require
   }
-  Require.main = function main(id) {
-    // setting main in order to reuse it later
-    Require.main = modules[id] = { id: id, exports: {} }
-    return Require()(id)
-  }
 
-  exports.require = function require(id, callback) {
-    callback = callback || function(error) { console.error(error) }
-    var module = modules[id] || (modules[id] = { id: id, exports: {} })
-    setTimeout(load, 0, id, function(e) {
-      if (e) return callback(e)
-      try {
-        Require()(id)
-      } catch(e) {
-        callback(e)
-      }
-    })
+  function main(id) {
+    // setting main in order to reuse it later
+    Require.main = Module(id)
+    return require(id)
+  }
+  exports.main = main
+
+  function require(id) {
+    var module = Module(id)
+      , descriptor = ModuleDescriptor(id)
+
+    descriptor.execute = true
+    load(descriptor)
     return module.exports
   }
-  exports.require.main = function(id, callback) {
-    Require.main = modules[id] = { id: id, exports: {} }
-    return exports.require(id)
-  }
-})
+  require.main = main
+  exports.require = require
+
+  if (!('require' in global)) global.require = require
+  if (!('define' in global)) global.define = define
+
+  if (mainId = getMainId()) require.main(mainId)
+}(this)
