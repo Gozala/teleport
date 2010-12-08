@@ -72,7 +72,6 @@ var teleport = new function Teleport(global, undefined) {
   }
 
   function onReady(descriptor) {
-    console.log(descriptor.id)
     descriptor.ready = true
     updateDependents(descriptor)
     if (descriptor.execute) Require()(descriptor.id)
@@ -138,13 +137,12 @@ var teleport = new function Teleport(global, undefined) {
    *    absolute id
    */
   function resolveId(id, baseId) {
-    var parts, part, root, base
-
-    if (0 < id.indexOf('://')) return id
+    var parts, part, root, base, extension
+    // If given `id` is not relative or `baseId` is not provided we can't resolve.
+    if (!baseId || !isModuleIdRelative(id)) return id
+    extension = getExtension(baseId)
     parts = id.split('/')
     root = parts[0]
-    if (root.charAt(0) != '.') return id
-    baseId = baseId || ''
     base = baseId.split('/')
     if (base.length > 1) base.pop()
     while (part = parts.shift()) {
@@ -152,10 +150,24 @@ var teleport = new function Teleport(global, undefined) {
       if (part == '..' && base.length) base.pop()
       else base.push(part)
     }
-    return base.join('/')
+    return base.join('/') + extension
   }
 
-  function resolveURL(id) { return 'packages/' + id + '.js?module&transport' }
+  function isModuleIdRelative(id) {
+    return '.' === id.charAt(0)
+  }
+
+  function getExtension(id) {
+    var basename = id.split('/').pop()
+      , index = basename.lastIndexOf('.')
+    return 0 < index ? basename.substr(index) : ''
+  }
+
+  function resolveURL(id) {
+    id = resolveId(id, BASE)
+    id = 0 < id.indexOf('://') ? id : 'packages/' + id + '.js'
+    return id + '?module&transport'
+  }
 
   // Loads module and all it's dependencies. Once module with all the
   // dependencies is loaded callback is called.

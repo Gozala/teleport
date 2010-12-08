@@ -38,15 +38,44 @@ function isMainModule(id) {
 }
 exports.isMainModule = isMainModule
 
-function getDependencies(source) {
+function isModuleIdRelative(id) {
+  return '.' === id.charAt(0)
+}
+exports.isModuleIdRelative = isModuleIdRelative
+
+function getExtension(id) {
+  var basename = id.split('/').pop()
+    , index = basename.lastIndexOf('.')
+  return 0 < index ? basename.substr(index) : ''
+}
+exports.getExtension = getExtension
+
+function resolveId(id, baseId) {
+  var parts, part, root, base, extension
+  // If given `id` is not relative or `baseId` is not provided we can't resolve.
+  if (!baseId || !isModuleIdRelative(id)) return id
+  extension = getExtension(baseId)
+  parts = id.split('/')
+  root = parts[0]
+  base = baseId.split('/')
+  if (base.length > 1) base.pop()
+  while (part = parts.shift()) {
+    if (part == '.') continue
+    if (part == '..' && base.length) base.pop()
+    else base.push(part)
+  }
+  return base.join('/') + extension
+}
+exports.resolveId = resolveId
+
+function getDependencies(id, source) {
   var dependencies = []
     , dependency
   // strip out comments to ignore commented `require` calls.
   source = source.replace(COMMENTS_MATCH, '')
   while (dependency = REQUIRE_MATCH.exec(source)) {
     dependency = dependency[3]
-    dependencies.push
-      ('.' == dependency.charAt(0) ? fs.join(this.id, dependency): dependency)
+    dependencies.push(resolveId(dependency, id))
   }
   return dependencies
 }
@@ -54,7 +83,7 @@ exports.getDependencies = getDependencies
 
 function wrapInTransport(id, source) {
   source = String(source)
-  var dependencies = getDependencies(source)
+  var dependencies = getDependencies(id, source)
     , dependsString = ''
 
   if (dependencies.length) dependsString = '"' + dependencies.join('","') + '"'
@@ -107,7 +136,9 @@ exports.PackageModules = Trait(
     var packageName = getPackageName(id)
       , source
 
-    if (packageName === this.name)
+    if (isModuleIdRelative(id))
+      source = this.getContent(id)
+    else if (packageName === this.name)
       source = this.getContent(this.getModulePath(id))
     else
       source = when(this.dependencies, function(dependencies) {

@@ -78,7 +78,10 @@ function isModuleRequest(url) {
 }
 
 function getModuleId(path) {
-  return removeJSExtension(getPackageRelativePath(path))
+  var id = getPackageRelativePath(path)
+  if (id == path) id = '.' + id
+  else id = removeJSExtension(id)
+  return id
 }
 function getContentPath(path) {
   return String(path).substr(1)
