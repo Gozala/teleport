@@ -91,6 +91,10 @@ function isTransportRequest(url) {
   return 0 <= String(url.search).indexOf('transport')
 }
 
+function isRegistryRequest(url) {
+  return url === '/packages/registry.json'
+}
+
 function getPackageContentForPath(pack, path, packageName) {
   var content, name
   if (isUnderPackages(path)) {
@@ -132,9 +136,11 @@ function start(name) {
     // If user has requested anything that is not under packages folder we
     // can't handle that so we should redirect to a packages/rest/of/path
     // instead.
-    if (!isUnderPackages(path))
+    if (isRegistryRequest(path))
+      content = registry.invoke('stringify', ['    '])
+    else if (!isUnderPackages(path))
       redirectTo(makePackageRedirectURL(name, normalizedPath), response)
-    if (normalizedPath !== path) redirectTo(normalizedPath, response)
+    else if (normalizedPath !== path) redirectTo(normalizedPath, response)
     else {
       packageName = getPackageName(path)
       relativePath = getPackageRelativePath(compeletPath(path), packageName)
@@ -153,21 +159,24 @@ function start(name) {
         } else {
           content = getPackageContentForPath(pack, relativePath, packageName)
         }
-        when
-        ( content
-        , function onDocument(content) {
-            response.writeHead(200, { 'Content-Type': mime })
-            response.end(content)
-          }
-        , function onFailed(error) {
-            response.writeHead(404)
-            Promised.sync(response.end).call(response, playground)
-          }
-        )
       } else {
         response.writeHead(404)
         Promised.sync(response.end).call(response, playground)
       }
+    }
+
+    if (content) {
+      when
+      ( content
+      , function onDocument(content) {
+          response.writeHead(200, { 'Content-Type': mime })
+          response.end(content)
+        }
+      , function onFailed(error) {
+          response.writeHead(404)
+          Promised.sync(response.end).call(response, playground)
+        }
+      )
     }
   })
 }

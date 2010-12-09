@@ -38,6 +38,7 @@ function Descriptor(options) {
         { type: JSON_PARSE_ERROR
         , error: error
         })
+        descriptor = Object.create({ error: String(error) })
       }
       // If 'teleport' overlay is found return immediately.
       if ('overlay' in descriptor && 'teleport' in descriptor.overlay) {

@@ -23,14 +23,31 @@ var fs =  require('promised-fs')
 ,   root = fs.Path(CONST.NPM_DIR)
 ,   DESCRIPTOR_PATH = fs.join(VERSION, PREFIX, CONST.DESCRIPTOR_FILE)
 
+var PromisedJSON = Promised(JSON)
+
 var RegistryTrait = Trait(
 { packages: Trait.required
 , root: root
 , toJSON: function toJSON() {
-    var json = {}
-    ,   packages = this.packages
-    for (var name in packages) json[name] = packages[name].invoke('toJSON')
-    return json
+    var json, packages, descriptors
+    if (!this._json) {
+      json = {}
+      packages = this.packages
+      descriptors = Object.keys(packages).map(function (key) {
+        return when
+        ( packages[key].invoke('toJSON')
+        , function (descriptor) { json[key] = descriptor }
+        , function (reason) { json[key] = { error: String(reason) } }
+        )
+      })
+      this._json = when(descriptors, function() {
+        return this._json = json
+      })
+    }
+    return this._json
+  }
+, stringify: function stringify(format) {
+    return PromisedJSON.invoke('stringify', [this.toJSON(), null, format])
   }
 })
 exports.Registry = function Registry(path) {
