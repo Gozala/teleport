@@ -90,7 +90,7 @@ function wrapInTransport(id, source) {
   return TRANSPORT_WRAPPER.
     replace('{{id}}', id).
     replace('{{dependencies}}', dependsString).
-    replace('{{source}}', source)
+    split('{{source}}').join(source)
 }
 exports.wrapInTransport = wrapInTransport
 
