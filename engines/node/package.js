@@ -72,10 +72,12 @@ var PackageTrait = Trait
       dependencies = dependencies.map(function(name) {
         value[name] = packages[name]
         return when(packages[name].get('dependencies'), function(dependencies) {
-          for (key in dependencies) nestedDependencies[key] = packages[key]
+          for (key in dependencies)
+            if (!(key in value)) nestedDependencies[key] = packages[key]
         }, function() {})
       })
       return Promised(when(all(dependencies), function() {
+        value.teleport = packages.teleport
         return this._dependencies = value
       }))
     }
