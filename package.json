@@ -29,6 +29,8 @@
       { "markdown-js": ">=0.0.3"
       , "promised-http": ">=0.0.2"
       , "q": ">=0.1.5"
+      , "mustache": ">=0.3.0"
+      , "backbone": ">=0.3.3"
       }
     , "main": "./engines/teleport/teleport.js"
     , "directories": { "lib": "./engines/teleport" }
