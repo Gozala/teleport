@@ -120,13 +120,13 @@ exports.PackageModules = Trait(
     if (packageName !== this.name)
       path = null
     else {
-      descriptor = this.descriptor
+      descriptor = this.descriptor.overlay.teleport
       if (isMainModule(id)) path = descriptor.main
       else {
         modules = descriptor.modules
         relativeId = getPackageRelativeId(id)
         if (modules && (path = modules[relativeId])) path
-        else path = fs.join((descriptor.directories || {}).lib || LIB, relativeId)
+        else path = fs.join(descriptor.directories.lib, relativeId)
       }
       if ('.js' !== path.substr(-3)) path += '.js'
     }
