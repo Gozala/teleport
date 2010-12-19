@@ -62,6 +62,7 @@ var descriptorProperties =
 , 'homepage'
 , 'implements'
 , 'scripts'
+, 'error'
 ]
 
 function normilizeDescriptorProperties(descriptor) {
@@ -131,7 +132,7 @@ function addModulesToDescriptor(descriptor, extension) {
 
 // Function takes path to the package descriptor parses it. It also applies overlay
 // metadata. This is a promised function so it can take promises and will
-// return promise of parsed json back.
+// return promise of parsed JSON back.
 function Descriptor(options) {
   return when(fs.path([options.path, DESCRIPTOR_FILE]).read(), function fileRead(content) {
       var descriptor = {}
