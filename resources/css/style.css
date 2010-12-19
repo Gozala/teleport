@@ -15,7 +15,7 @@ body {
 }
 
 .fixed, code, pre {
-  font-family: Monaco, monospace;
+  font-family: font-family: Monaco, "Courier New", "DejaVu Sans Mono", "Bitstream Vera Sans Mono", monospace;
   color: #AAA;
   font-size: 12px;
 }
@@ -178,6 +178,12 @@ article:target, article.visible {
   font-size: 40px;
   padding: 3px 40px 3px 15px;
 }
+.package[data-active=true] .name {
+  background: #D17100;
+}
+.package[data-broken=true] .name {
+  background: red;
+}
 .package:hover .version {
   visibility: visible;
   font-size: 16px;
@@ -209,4 +215,12 @@ article:target, article.visible {
   position: fixed;
   left: 45%;
   width: 50%;
+}
+
+#package-details .module {
+  border-radius: 8px;
+  padding: 0px 3px 0px 3px;
+  margin: 3px;
+  color: white;
+  background: rgba(255, 255, 255, 0.2);
 }
