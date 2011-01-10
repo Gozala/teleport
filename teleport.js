@@ -13,13 +13,20 @@ var teleport = new function Teleport(global, undefined) {
     , SCRIPT_ELEMENT = 'script'
     , UNDEFINED = 'undefined'
     , SCRIPT_TYPE = 'text/javascript'
-    , BASE = (document.baseURI || document.URL).split('?')[0].split('#')[0]
+    , BASE = getBase()
 
     , isBrowser = UNDEFINED !== typeof window && window.window === window
     , hasNewJS = isBrowser && 0 <= navigator.userAgent.indexOf('Firefox')
     , isWorker = !isBrowser && UNDEFINED !== typeof importScripts
 
     if (hasNewJS) SCRIPT_TYPE = 'application/javascript;version=1.8'
+
+  function getBase() {
+    var base = (document.baseURI || document.URL).split('?')[0].split('#')[0]
+    if (0 < base.substr(base.lastIndexOf('/')).indexOf('.'))
+      base = base.substr(0, base.lastIndexOf('/') + 1)
+    return base
+  }
 
   function declareDependency(dependent, dependency) {
     ;(dependency.dependents || (dependency.dependents = {}))[dependent.id] =
