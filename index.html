@@ -7,14 +7,17 @@
     <link type="text/css" rel="stylesheet" href="resources/css/style.css"/>
     <link type="text/css" rel="stylesheet" href="resources/css/code.css"/>
     <link rel="icon" type="image/png" href="resources/images/favicon.ico"/>
-    <script type="text/javascript" src="packages/teleport.js"></script>
-    <script type="text/javascript">require.main('teleport/webapp')</script>
+    <script data-main="teleport/webapp" type="text/javascript" src="packages/teleport/teleport.js"></script>
   </head>
   <body>
     <div class="ribbon">
       <a target="_blank" href="https://github.com/Gozala/teleport">Fork me on GitHub</a>
     </div>
-
+    <div id="app-view">
+      <section id='packages'></section>
+      <section id="package-details"></section>
+    <div>
+    <!--
     <section>
       <header><h1>Teleport</h1></header>
       <article class="visible">
@@ -34,5 +37,6 @@
       <header><a href="#guide">Guide</a></header>
       <article id="guide"></article>
     </section>
+    -->
   </body>
 </html>

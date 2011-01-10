@@ -15,7 +15,7 @@ body {
 }
 
 .fixed, code, pre {
-  font-family: Monaco, monospace;
+  font-family: font-family: Monaco, "Courier New", "DejaVu Sans Mono", "Bitstream Vera Sans Mono", monospace;
   color: #AAA;
   font-size: 12px;
 }
@@ -116,27 +116,111 @@ article:target, article.visible {
   position: relative;
   top: 35px;
   left: 35px;
-  background-color: #192a33;
+  background-color: #a00;
   -moz-transform: rotate(45deg);
   -webkit-transform: rotate(45deg);
+  transform: rotate(45deg);
   /* shadow */
-  -moz-box-shadow:
-    -1px 0px 2px hsla(200,100%,70%,.7),
-    0 -5px 10px hsla(200,100%,50%,.1),
-    -10px 20px 25px rgba(0,0,0,0.9);
-  -webkit-box-shadow:
-    hsla(200,100%,70%,.7) -1px 0px 2px,
-    hsla(200,100%,50%,.1) 0 -5px 20px,
-    rgba(0,0,0,0.9) -10px 20px 25px;
+  -moz-box-shadow: 0 0 1em #333;
+  -webkit-box-shadow: 0 0 1em #333;
+  box-shadow: 0 0 1em #333;
   display: block;
-  border: 1px solid hsla(200,100%,80%,.1);
-  color: #ccc;
+  border: 1px solid #faa;
+  color: white;
   font: bold 10px 'Helvetiva Neue', Helvetica, Arial, sans-serif;
   margin: 0.05em 0 0.075em 0;
   padding: 0.5em 3.5em;
   text-align: center;
   text-decoration: none;
   /* shadow */
-  text-shadow: 0 0 0.5em hsla(200,100%,70%,.7);
+  text-shadow: 0 0 0.5em #444;
 }
 
+#packages {
+  font-family: 'Helvetiva Neue', Helvetica, Arial, sans-serif;
+  position: absolute;
+  margin: 0 0 0 -42px;
+  padding: 0 0 50px 0;
+}
+.package {
+  float: left;
+  clear: both;
+  padding: 2px;
+  display: inline;
+}
+.package > a {
+  text-decoration: none;
+  position: relative;
+  display: inline-block;
+}
+.package .name {
+  cursor: pointer;
+  line-height: 20px;
+  font-size: 12px;
+  text-decoration: none;
+  color: black;
+  text-shadow: rgba(0, 0, 0, 0.7) 0px 1px 2px;
+  -webkit-box-shadow: 2px 2px 4px #333;
+  -moz-box-shadow: 2px 2px 4px #333;
+  box-shadow: 2px 2px 4px #333;
+  -webkit-transition: all 0.2s ease;
+  -moz-transition: all 0.3s ease;
+  -webkit-border-radius: 5px;
+  -moz-border-radius: 5px;
+  border-radius: 5px;
+  background: rgb(184, 211, 11);
+  padding: 3px 5px 3px 15px;
+  margin: 10px 0px 10px 0px;
+}
+
+.package:hover .name {
+  line-height: 50px;
+  font-size: 40px;
+  padding: 3px 40px 3px 15px;
+}
+.package[data-active=true] .name {
+  background: #D17100;
+}
+.package[data-broken=true] .name {
+  background: red;
+}
+.package:hover .version {
+  visibility: visible;
+  font-size: 16px;
+}
+
+.version {
+  font-size: 1px;
+  visibility: hidden;
+  -webkit-transition: all 0.2s ease;
+  -moz-transition: all 0.3s ease;
+  color: black;
+  -webkit-transform: rotate(-90deg);
+  -webkit-transform-origin: 100% 0%;
+  -moz-transform: rotate(-90deg);
+  -moz-transform-origin: 100% 0%;
+  transform: rotate(-90deg);
+  transform-origin: 100% 0%;
+
+  border-radius: 5px;
+  position: absolute;
+  right: 25px;
+  top: 5px;
+  padding: 0px 3px 0px 3px;
+  background: rgba(255, 255, 255, 0.4);
+}
+
+
+#package-details {
+  position: fixed;
+  left: 45%;
+  width: 50%;
+}
+
+#package-details .module {
+  border-radius: 8px;
+  padding: 0px 3px 0px 3px;
+  margin: 3px;
+  color: white;
+  background: rgba(255, 255, 255, 0.2);
+}

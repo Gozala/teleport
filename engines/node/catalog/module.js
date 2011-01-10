@@ -17,114 +17,136 @@ var fs =  require('promised-fs')
 ,   COMMENTS_MATCH = CONST.COMMENTS_MATCH
 ,   REQUIRE_MATCH = CONST.REQUIRE_MATCH
 
-var ModuleTransport = function ModuleTransport(options) {
-  var moduleTransport = Object.create(ModuleTransport.prototype,
-    { path: { value: options.path }
-    , id: { value: options.id }
-    })
-  return when
-  ( options.source
-  , function sourceResolved(source) {
-      moduleTransport.source = String(source)
-      return moduleTransport
-    }
-  , function sourceRejected(reason) {
-      moduleTransport.source = MODULE_NOT_FOUND_ERROR
-        .replace('{{id}}', options.id)
-        .replace('{{path}}', options.path)
-      return moduleTransport
-    }
-  )
-}
-ModuleTransport.prototype =
-{ constructor: ModuleTransport
-  // Analyzes given module source and returns array of top id's that the module
-  // depends on.
-, get dependencies() {
-    // strip out comments to ignore commented `require` calls.
-    var source = this.source.replace(COMMENTS_MATCH, '')
-    ,   dependencies = []
-    ,   dependency
-    while (dependency = REQUIRE_MATCH.exec(source)) {
-      dependency = dependency[3]
-      dependencies.push
-        ('.' == dependency.charAt(0) ? fs.join(this.id, dependency): dependency)
-    }
-    return dependencies
-  }
-, toString: function toString() {
-    var dependencies =
-      this.dependencies.length ? '"' + this.dependencies.join('","') + '"' : ''
-    return TRANSPORT_WRAPPER.
-      replace('{{id}}', this.id).
-      replace('{{dependencies}}', dependencies).
-      replace('{{source}}', this.source)
-  }
-}
 
-exports.Module = function Module(options) {
-  return ModuleTrait.create(options)
+function getPackageName(id) {
+  return id.split(SEPARATOR)[0].split(VERSION_MARK)[0]
 }
-var ModuleTrait = Trait(
-{ packages: Trait.required
-, packagesPath: Trait.required
-, id: Trait.required
-, get packageMeta() {
-    return this.packages[this.packageName]
-  }
-  // Package name
-, get packageName() {
-    return name = this.id.split(SEPARATOR)[0].split(VERSION_MARK)[0]
-  }
-, get packagePath() {
-    return this.packagesPath.join
-      (this.packageName, this.version || VERSION, PREFIX)
-  }
-  // Whether or not this module is main.
-, get isMain() {
-    return 0 > this.id.indexOf(SEPARATOR)
-  }
-  // Package version
-, get version() {
-    return this.id.split(SEPARATOR)[0].split(VERSION_MARK)[1] || ''
-  }
-, get relativeId() {
-    return this.id.substr(this.id.indexOf(SEPARATOR) + 1)
-  }
-, get path() {
-    var packageMeta = this.packageMeta
-    ,   path = null
+exports.getPackageName = getPackageName
 
-    // If package is not in catalog then returning `null`
-    if (!packageMeta) return path
-    // If it's a main module reading path form descriptor.
-    if (this.isMain) {
-      path = this.packagePath.join(this.packageMeta.main)
-    } else {
-      var modules = packageMeta.modules
-      if (modules && (path = modules[this.relativeId]))
-        path = this.packagePath.join(path)
-      else
-        path = this.packagePath.join
-        ( (packageMeta.directories || {}).lib || LIB
-        , this.relativeId
-        )
+function getPackageVersion(id) {
+  return id.split(SEPARATOR)[0].split(VERSION_MARK)[1] || ''
+}
+exports.getPackageVersion = getPackageVersion
+
+function getPackageRelativeId(id) {
+  return id.substr(id.indexOf(SEPARATOR) + 1)
+}
+exports.getPackageRelativeId = getPackageRelativeId
+
+function isMainModule(id) {
+  return 0 > id.indexOf(SEPARATOR)
+}
+exports.isMainModule = isMainModule
+
+function isModuleIdRelative(id) {
+  return '.' === id.charAt(0)
+}
+exports.isModuleIdRelative = isModuleIdRelative
+
+function getExtension(id) {
+  var basename = id.split('/').pop()
+    , index = basename.lastIndexOf('.')
+  return 0 < index ? basename.substr(index) : ''
+}
+exports.getExtension = getExtension
+
+function resolveId(id, baseId) {
+  var parts, part, root, base, extension
+  // If given `id` is not relative or `baseId` is not provided we can't resolve.
+  if (!baseId || !isModuleIdRelative(id)) return id
+  extension = getExtension(baseId)
+  parts = id.split('/')
+  root = parts[0]
+  base = baseId.split('/')
+  if (base.length > 1) base.pop()
+  while (part = parts.shift()) {
+    if (part == '.') continue
+    if (part == '..' && base.length) base.pop()
+    else base.push(part)
+  }
+  return base.join('/') + extension
+}
+exports.resolveId = resolveId
+
+function getDependencies(id, source) {
+  var dependencies = []
+    , dependency
+  // strip out comments to ignore commented `require` calls.
+  source = source.replace(COMMENTS_MATCH, '')
+  while (dependency = REQUIRE_MATCH.exec(source)) {
+    dependency = dependency[3]
+    dependencies.push(resolveId(dependency, id))
+  }
+  return dependencies
+}
+exports.getDependencies = getDependencies
+
+function wrapInTransport(id, source) {
+  source = String(source)
+  var dependencies = getDependencies(id, source)
+    , dependsString = ''
+
+  if (dependencies.length) dependsString = '"' + dependencies.join('","') + '"'
+  return TRANSPORT_WRAPPER.
+    replace('{{id}}', id).
+    replace('{{dependencies}}', dependsString).
+    split('{{source}}').join(source)
+}
+exports.wrapInTransport = wrapInTransport
+
+exports.PackageModules = Trait(
+{ path: Trait.required
+, dependencies: Trait.required
+, name: Trait.required
+, descriptor: Trait.required
+, getModuleTransport: function getModuleTransport(id) {
+    var errorSource = MODULE_NOT_FOUND_ERROR
+                      .replace('{{id}}', id)
+                      .replace('{{path}}', fs.join(this.path, this.getModulePath(id)))
+
+    return when
+    ( this.getModuleSource(id)
+    , wrapInTransport.bind(null, id)
+    , wrapInTransport.bind(null, id, errorSource)
+    )
+  }
+, getModulePath: function getModuleSource(id) {
+    var packageName = getPackageName(id)
+      , relativeId
+      , path
+      , descriptor
+      , modules
+
+    if (packageName !== this.name)
+      path = null
+    else {
+      descriptor = this.descriptor.overlay.teleport
+      if (isMainModule(id)) path = descriptor.main
+      else {
+        modules = descriptor.modules
+        relativeId = getPackageRelativeId(id)
+        if (modules && (path = modules[relativeId])) path
+        else path = fs.join(descriptor.directories.lib, relativeId)
+      }
+      if ('.js' !== path.substr(-3)) path += '.js'
     }
-    return String(path).substr(-3) == EXTENSION ? path :
-      fs.Path(path + EXTENSION)
+    return path
   }
-, get source() {
-    return !this.packageMeta ?
-      PACKAGE_NOT_FOUND_ERROR.replace('{{name}}', this.packageName)
-      : this.path.read()
-  }
-, get transport() {
-    var id = this.id
-    ,   path = String(this.path)
-    return ModuleTransport(
-    { id: this.id
-    , path: String(this.path)
-    , source: this.source
-    })
+, getModuleSource: function getModuleSource(id) {
+    var packageName = getPackageName(id)
+      , source
+
+    if (isModuleIdRelative(id))
+      source = this.getContent(id)
+    else if (packageName === this.name)
+      source = this.getContent(this.getModulePath(id))
+    else
+      source = when(this.dependencies, function(dependencies) {
+        var dependency = dependencies[packageName]
+        if (dependency) source = dependency.invoke('getModuleSource', [id])
+        else source = PACKAGE_NOT_FOUND_ERROR.replace('{{name}}', packageName)
+        return source
+      })
+    return source
   }
 })
