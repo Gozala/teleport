@@ -20,7 +20,7 @@ var fs =  require('promised-fs')
 ,   PACKAGE_NOT_FOUND_ERROR = CONST.PACKAGE_NOT_FOUND_ERROR
 ,   COMMENTS_MATCH = CONST.COMMENTS_MATCH
 ,   REQUIRE_MATCH = CONST.REQUIRE_MATCH
-,   root = fs.Path(CONST.NPM_DIR)
+,   root = CONST.NPM_DIR
 ,   DESCRIPTOR_PATH = fs.join(VERSION, PREFIX, CONST.DESCRIPTOR_FILE)
 
 var PromisedJSON = Promised(JSON)
@@ -53,9 +53,9 @@ var RegistryTrait = Trait(
 exports.Registry = function Registry(path) {
   var registry = Object.create(Registry.prototype)
   registry.packages = {}
-  if (path) registry.root = fs.path(path)
+  if (path) registry.root = String(path)
   registry = RegistryTrait.create(registry)
-  return Promised(when(registry.root.list(), function onEntries(entries) {
+  return Promised(when(fs.list(registry.root), function onEntries(entries) {
     var packages = registry.packages
     entries.forEach(function(name) {
       if ('.' === name.charAt(0)) return

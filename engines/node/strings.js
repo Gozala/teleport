@@ -1,5 +1,8 @@
 'use strict'
 
+var Q = require('q')
+
+
 exports.SEPARATOR = '/'
 exports.VERSION = 'active'
 exports.PREFIX = 'package'
@@ -13,7 +16,13 @@ exports.DESCRIPTOR_FILE = 'package.json'
 exports.TELEPORT_CORE_FILE = 'teleport.js'
 exports.TELEPORT_ENGINE_FILE = 'teleport-service.js'
 exports.TELEPORT_PLAYGROUND = '../../resources/pages/404.html'
-exports.NPM_DIR = require('npm').dir
+
+var dir = Q.defer()
+exports.NPM_DIR = dir.promise
+require('npm').load({}, function(e, npm) { 
+  if (e) dir.reject(e)
+  else dir.resolve(npm.dir)
+})
 
 exports.ENGINES_DIR = 'engine'
 exports.PACKAGES_DIR = 'packages'

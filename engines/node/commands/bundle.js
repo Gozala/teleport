@@ -3,7 +3,6 @@
 var fs = require('promised-fs')
 ,   when = require('q').when
 ,   pu = require('promised-utils'), Promised = pu.Promised, all = pu.all
-,   Catalog = require('teleport/catalog').Catalog
 ,   CONST = require('teleport/strings')
 
 ,   PACKAGES_DIR = CONST.PACKAGES_DIR

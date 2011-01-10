@@ -7,7 +7,6 @@ var http = require('http')
 ,   all = require('promised-utils').all
 ,   Registry = require('teleport/registry').Registry
 ,   Promised = require('promised-utils').Promised
-,   Catalog = require('teleport/catalog').Catalog
 ,   activePackage = require('teleport/catalog/package').descriptor
 ,   CONST = require('teleport/strings')
 ,   parseURL = require('url').parse
@@ -17,7 +16,6 @@ var http = require('http')
 ,   core = lib.join(CONST.TELEPORT_CORE_FILE).read()
 ,   engine = lib.join(CONST.ENGINES_DIR, CONST.TELEPORT_ENGINE_FILE).read()
 ,   playground = lib.join(CONST.TELEPORT_PLAYGROUND).read()
-,   root = fs.Path(CONST.NPM_DIR)
 ,   deprecatedPath = 'packages/teleport.js'
 ,   newTeleportPath = 'packages/teleport/teleport.js'
 

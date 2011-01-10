@@ -20,7 +20,7 @@ var fs =  require('promised-fs')
   , PACKAGE_NOT_FOUND_ERROR = CONST.PACKAGE_NOT_FOUND_ERROR
   , COMMENTS_MATCH = CONST.COMMENTS_MATCH
   , REQUIRE_MATCH = CONST.REQUIRE_MATCH
-  , root = fs.Path(CONST.NPM_DIR)
+  , root = CONST.NPM_DIR
   , DESCRIPTOR_PATH = fs.join(VERSION, PREFIX)
   , DESCRIPTOR_FILE = CONST.DESCRIPTOR_FILE
   , JSON_PARSE_ERROR = 'Failed to parse package descriptor: '
@@ -226,7 +226,7 @@ function Package(options) {
   // If options don't contains path, but contain a name property use it to
   // generate path to a package descriptor directory in npm registry.
   if (!('path' in options) && 'name' in options)
-    options.path = String(root.join(options.name, DESCRIPTOR_PATH))
+    options.path = fs.join(options.registry.root.valueOf(), options.name, DESCRIPTOR_PATH)
   // If path to a package descriptor is known reading, parsing and flattening
   // it.
   if ('path' in options) options = Descriptor(options)
