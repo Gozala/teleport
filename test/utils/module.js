@@ -1,6 +1,6 @@
 'use strict'
 
-var Module = require('teleport/catalog/module').Module
+var Module = require('teleport/module').Module
 ,   npmDir = require('../fixtures').npmDir
 
 exports.Assert = require('../asserts').Assert

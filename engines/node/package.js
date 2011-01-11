@@ -6,7 +6,7 @@ var fs =  require('promised-fs')
   , CONST = require('teleport/strings')
   , when = require('q').when
   , pu = require('promised-utils'), Promised = pu.Promised, all = pu.all
-  , PackageModules = require('./catalog/module').PackageModules
+  , PackageModules = require('./module').PackageModules
   , _ = require('underscore')._
 
   , EXTENSION = CONST.EXTENSION

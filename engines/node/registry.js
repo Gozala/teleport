@@ -6,7 +6,7 @@ var fs =  require('promised-fs')
 ,   CONST = require('teleport/strings')
 ,   when = require('q').when
 ,   Promised = require('promised-utils').Promised
-,   Module = require('./catalog/module').Module
+,   Module = require('./module').Module
 ,   Package = require('teleport/package').Package
 
 ,   EXTENSION = CONST.EXTENSION
