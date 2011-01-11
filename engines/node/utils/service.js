@@ -7,7 +7,7 @@ var http = require('http')
 ,   all = require('promised-utils').all
 ,   Registry = require('teleport/registry').Registry
 ,   Promised = require('promised-utils').Promised
-,   activePackage = require('teleport/catalog/package').descriptor
+,   activePackage = require('teleport/package').descriptor
 ,   CONST = require('teleport/strings')
 ,   parseURL = require('url').parse
 
