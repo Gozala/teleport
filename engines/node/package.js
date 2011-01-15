@@ -4,7 +4,7 @@ var fs =  require('promised-fs')
   , when = require('q').when
   , Trait = require('light-traits').Trait
   , CONST = require('teleport/strings')
-  , when = require('q').when
+  , Q = require('q'), when = Q.when, reject = Q.reject
   , pu = require('promised-utils'), Promised = pu.Promised, all = pu.all
   , PackageModules = require('./module').PackageModules
   , _ = require('underscore')._
