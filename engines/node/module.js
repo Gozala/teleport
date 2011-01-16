@@ -117,11 +117,19 @@ exports.PackageModules = Trait(
       , descriptor
       , modules
 
+    // If this module is not from this package we can't get path to it
+    // so setting it to `null`.
     if (packageName !== this.name)
       path = null
     else {
+      // If module id is for a main module (does not contains separators)
+      // checking taking path to the main module from the package descriptor.
       descriptor = this.descriptor.overlay.teleport
       if (isMainModule(id)) path = descriptor.main
+      // If module is not a main then checking if path for this module
+      // is defined in package descriptor, if it's not there then we generate
+      // path by adding relative module ID to path of a package `lib`. In
+      // addition we add `.js` extension if id does not already has one.
       else {
         modules = descriptor.modules
         relativeId = getPackageRelativeId(id)

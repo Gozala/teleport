@@ -1,116 +1,58 @@
 'use strict'
 
-var Module = require('teleport/module').Module
-,   npmDir = require('../fixtures').npmDir
+var m = require('teleport/module')
 
-exports.Assert = require('../asserts').Assert
-
-exports['test regular module'] = function(assert) {
-  assert.module
-  ( Module(
-    { id: 'bar/module/xhr+eval'
-    , packages: { bar: { name: 'bar' } }
-    , packagesPath: npmDir
-    })
-  , { dir: npmDir
-    , name: 'bar'
-    , path: './lib/module/xhr+eval.js'
-    , relative: 'module/xhr+eval'
-    }
-  , 'test module `bar/module/xhr+eval.js`'
-  )
+exports['test package name'] = function (assert) {
+  var getPackageName = m.getPackageName
+  assert.equal(getPackageName('foo/bar/baz'), 'foo', 'simple module')
+  assert.equal(getPackageName('bar/baz.js'), 'bar', 'with extension')
+  assert.notEqual(getPackageName('./bla/bar.js'), 'bla', 'not from relative')
+  assert.notEqual(getPackageName('baz.js'), 'baz', 'not from path')
 }
 
-exports['test main module'] = function(assert) {
-  assert.module
-  ( Module(
-    { id: 'bar'
-    , packages: { 'bar': { name: 'bar', main: './lib/foo' } }
-    , packagesPath: npmDir
-    })
-  , { dir: npmDir
-    , main: true
-    , name: 'bar'
-    , path: './lib/foo.js'
-    }
-  , 'test module with main property in descriptor'
-  )
-
-  assert.module
-  ( Module(
-    { id: 'foo'
-    , packages: { 'foo': { name: 'foo', main: './path/to/bar' } }
-    , packagesPath: npmDir
-    })
-  , { dir: npmDir
-    , name: 'foo'
-    , main: true
-    , path: './path/to/bar.js'
-    }
-  , 'module with main property pointing outside of lib dir.'
-  )
+exports['test package version'] = function (assert) {
+  var getPackageVersion = m.getPackageVersion
+  assert.equal(getPackageVersion('foo/bar'), '', 'no version')
+  assert.equal(getPackageVersion('foo@0.0.1/bar'), '0.0.1', 'version')
 }
 
-exports['test versioned package'] = function(assert) {
-  assert.module
-  ( Module(
-    { id: 'bar@0.1.1/baz'
-    , packages: { bar: { name: 'bar' } }
-    , packagesPath: npmDir
-    })
-  , { dir: npmDir
-    , name: 'bar'
-    , version: '0.1.1'
-    , path: './lib/baz.js'
-    }
-  , 'module with versioned package name'
-  )
+exports['test main module id'] = function (assert) {
+  var isMainModule = m.isMainModule
+  assert.ok(isMainModule('foo'), 'main module')
+  assert.ok(isMainModule('foo.js'), 'main module path')
+  assert.ok(!isMainModule('foo/bar'), 'nested module')
 }
 
-exports['test custom lib'] = function(assert) {
-  assert.module
-  ( Module(
-    { id: 'bar/test'
-    , packages: { bar: { name: 'bar', directories: { lib: 'engine/teleport' } } }
-    , packagesPath: npmDir
-    })
-  , { dir: npmDir
-    , name: 'bar'
-    , id: 'bar/test'
-    , path: './engine/teleport/test.js'
-    }
-  , 'module with custom lib path'
-  )
+exports['test relative moduel id'] = function (assert) {
+  var isModuleIdRelative = m.isModuleIdRelative
+  assert.ok(isModuleIdRelative('./foo'), 'id relative to current')
+  assert.ok(isModuleIdRelative('../foo'), 'id relative to parent')
+  assert.ok(!isModuleIdRelative('foo/bar'), 'absolute id')
 }
 
-exports['test module alias'] = function(assert) {
-  var packages = { bar: { name: 'bar', modules: { foo: './path/to/foo.js' } } }
+exports['test find package relative id'] = function (assert) {
+  var getPackageRelativeId = m.getPackageRelativeId
+  assert.equal(getPackageRelativeId('foo/bar/baz'), 'bar/baz', 'simple')
+  assert.equal(getPackageRelativeId('foo@0.2.33/bar'), 'bar', 'versioned')
+  assert.equal(getPackageRelativeId('bla/baz.js'), 'baz.js', 'with extension')
+}
 
-  assert.module
-  ( Module(
-    { id: 'bar/test'
-    , packages: packages
-    , packagesPath: npmDir
-    })
-  , { dir: npmDir
-    , name: 'bar'
-    , path: './lib/test.js'
-    }
-  , 'non aliased module form package with aliases'
-  )
+exports['test find extension'] = function (assert) {
+  var getExtension = m.getExtension
+  assert.equal('.js', getExtension('foo/bar.js'), 'with extension');
+  assert.equal('', getExtension('foo/bar'), 'without extension');
+}
 
-  assert.module
-  ( Module(
-    { id: 'bar/foo'
-    , packages: packages
-    , packagesPath: npmDir
-    })
-  , { dir: npmDir
-    , name: 'bar'
-    , path: './path/to/foo.js'
-    }
-  , 'aliased module'
-  )
+exports['test module id resolutions'] = function (assert) {
+  var resolveId = m.resolveId;
+  assert.equal(resolveId('./foo', 'bar/baz'), 'bar/foo', 'same level')
+  assert.equal(resolveId('bla', 'foo/bar'), 'bla', 'absolute')
+  assert.equal(resolveId('../foo', 'bar/baz/bla'), 'bar/foo', 'parent level')
+  assert.equal(resolveId('../foo/./bar', 'foo/bar'), 'foo/bar', 'messy id')
+}
+
+exports['test find dependencies'] = function (assert) {
+  var getDependencies = m.getDependencies;
 }
 
 if (module == require.main) require('test').run(exports)
