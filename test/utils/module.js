@@ -2,6 +2,8 @@
 
 var m = require('teleport/module')
 
+exports.Assert = require('../asserts').Assert
+
 exports['test package name'] = function (assert) {
   var getPackageName = m.getPackageName
   assert.equal(getPackageName('foo/bar/baz'), 'foo', 'simple module')
@@ -53,6 +55,39 @@ exports['test module id resolutions'] = function (assert) {
 
 exports['test find dependencies'] = function (assert) {
   var getDependencies = m.getDependencies;
+  assert.equivalentSet(
+         getDependencies('main', [
+                                  '"use strict";',
+                                  'var foo = require("foo");',
+                                  'var b = require(\'bar\');',
+                                  'var text = "hello world"'
+                                 ].join('\n')),
+         ['foo', 'bar'],
+         'simple module requireing modules by absoulte ids')
+
+  assert.equivalentSet(
+         getDependencies('main/bla',
+                         function () {
+                           var a = require('./a'), b = require('../b')
+                           var c = require('c/d')
+                           var e = 2 + 3
+                         }),
+         ['main/a', 'b', 'c/d'],
+         'module requireing modules by relative ids')
+
+  assert.equivalentSet(
+         getDependencies('foo/bar/baz',
+                         function module() {
+                            var a = require('../../a');
+                            // var require('a')
+                            var b = require("./.././b");
+                            /*
+                              var c = require('../c');
+                            */
+                         }),
+         ['a', 'foo/b'],
+         'module with commented require statements')
+
 }
 
 if (module == require.main) require('test').run(exports)
