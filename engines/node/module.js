@@ -72,7 +72,7 @@ function getDependencies(id, source) {
   var dependencies = []
     , dependency
   // strip out comments to ignore commented `require` calls.
-  source = source.replace(COMMENTS_MATCH, '')
+  source = String(source).replace(COMMENTS_MATCH, '')
   while (dependency = REQUIRE_MATCH.exec(source)) {
     dependency = dependency[3]
     dependencies.push(resolveId(dependency, id))
