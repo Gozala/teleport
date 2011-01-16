@@ -6,8 +6,26 @@ var when = require('q').when
 exports.Assert = function Assert() {
   return Object.create(AssertBase.apply(null, arguments), AssertDescriptor)
 }
+
+function containsSet(source, target) {
+  return source.every(function(element) {
+    return ~ target.indexOf(element)
+  })
+}
+
 var AssertDescriptor =
-{ module: { value: function module(actual, expected, message) {
+{ equivalentSet: { value: function equivalentSet(actual, expected, message) {
+    if (actual.length === expected.length && containsSet(actual, expected))
+      this.pass(message)
+    else
+      this.fail({
+        message: message,
+        actual: actual,
+        expected: expected,
+        operator: 'equivalentSet'
+      })
+  }}
+, module: { value: function module(actual, expected, message) {
     this.deepEqual
     ( { packageName: actual.packageName
       , version: actual.version
