@@ -10,6 +10,9 @@
   , "url": "git://github.com/Gozala/teleport.git"
   }
 , "bugs": { "web": "http://github.com/Gozala/teleport/issues/" }
+, "modules":
+  { "utils/module": "./engines/common/utils/module"
+  }
 , "overlay":
   { "node":
     { "dependencies":

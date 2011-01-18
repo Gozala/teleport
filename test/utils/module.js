@@ -1,6 +1,6 @@
 'use strict'
 
-var m = require('teleport/module')
+var m = require('teleport/utils/module')
 
 exports.Assert = require('../asserts').Assert
 

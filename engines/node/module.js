@@ -1,98 +1,18 @@
 'use strict'
 
 var fs =  require('promised-fs')
-,   when = require('q').when
-,   Trait = require('light-traits').Trait
-,   CONST = require('teleport/strings')
+  , when = require('q').when
+  , Trait = require('light-traits').Trait
+  , M = require('teleport/utils/module'), wrapInTransport = M.wrapInTransport
+                                 , getPackageName = M.getPackageName
+                                 , getPackageRelativeId = M.getPackageRelativeId
+                                 , isMainModule = M.isMainModule
+                                 , isModuleIdRelative = M.isModuleIdRelative
+  , CONST = require('teleport/strings')
 
-,   EXTENSION = CONST.EXTENSION
-,   SEPARATOR = CONST.SEPARATOR
-,   VERSION_MARK = CONST.VERSION_MARK
-,   VERSION = CONST.VERSION
-,   PREFIX = CONST.PREFIX
-,   LIB = CONST.LIB
-,   TRANSPORT_WRAPPER = CONST.TRANSPORT_WRAPPER
-,   MODULE_NOT_FOUND_ERROR = CONST.MODULE_NOT_FOUND_ERROR
-,   PACKAGE_NOT_FOUND_ERROR = CONST.PACKAGE_NOT_FOUND_ERROR
-,   COMMENTS_MATCH = CONST.COMMENTS_MATCH
-,   REQUIRE_MATCH = CONST.REQUIRE_MATCH
+  , MODULE_NOT_FOUND_ERROR = CONST.MODULE_NOT_FOUND_ERROR
+  , PACKAGE_NOT_FOUND_ERROR = CONST.PACKAGE_NOT_FOUND_ERROR
 
-
-function getPackageName(id) {
-  return id.split(SEPARATOR)[0].split(VERSION_MARK)[0]
-}
-exports.getPackageName = getPackageName
-
-function getPackageVersion(id) {
-  return id.split(SEPARATOR)[0].split(VERSION_MARK)[1] || ''
-}
-exports.getPackageVersion = getPackageVersion
-
-function getPackageRelativeId(id) {
-  return id.substr(id.indexOf(SEPARATOR) + 1)
-}
-exports.getPackageRelativeId = getPackageRelativeId
-
-function isMainModule(id) {
-  return 0 > id.indexOf(SEPARATOR)
-}
-exports.isMainModule = isMainModule
-
-function isModuleIdRelative(id) {
-  return '.' === id.charAt(0)
-}
-exports.isModuleIdRelative = isModuleIdRelative
-
-function getExtension(id) {
-  var basename = id.split('/').pop()
-    , index = basename.lastIndexOf('.')
-  return 0 < index ? basename.substr(index) : ''
-}
-exports.getExtension = getExtension
-
-function resolveId(id, baseId) {
-  var parts, part, root, base, extension
-  // If given `id` is not relative or `baseId` is not provided we can't resolve.
-  if (!baseId || !isModuleIdRelative(id)) return id
-  extension = getExtension(baseId)
-  parts = id.split('/')
-  root = parts[0]
-  base = baseId.split('/')
-  if (base.length > 1) base.pop()
-  while (part = parts.shift()) {
-    if (part == '.') continue
-    if (part == '..' && base.length) base.pop()
-    else base.push(part)
-  }
-  return base.join('/') + extension
-}
-exports.resolveId = resolveId
-
-function getDependencies(id, source) {
-  var dependencies = []
-    , dependency
-  // strip out comments to ignore commented `require` calls.
-  source = String(source).replace(COMMENTS_MATCH, '')
-  while (dependency = REQUIRE_MATCH.exec(source)) {
-    dependency = dependency[3]
-    dependencies.push(resolveId(dependency, id))
-  }
-  return dependencies
-}
-exports.getDependencies = getDependencies
-
-function wrapInTransport(id, source) {
-  source = String(source)
-  var dependencies = getDependencies(id, source)
-    , dependsString = ''
-
-  if (dependencies.length) dependsString = '"' + dependencies.join('","') + '"'
-  return TRANSPORT_WRAPPER.
-    replace('{{id}}', id).
-    replace('{{dependencies}}', dependsString).
-    split('{{source}}').join(source)
-}
-exports.wrapInTransport = wrapInTransport
 
 exports.PackageModules = Trait(
 { path: Trait.required

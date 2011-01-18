@@ -31,10 +31,7 @@ exports.TELEPORT_URI_PATH = exports.PACKAGES_URI_PATH + exports.TELEPORT_CORE_FI
 exports.ROOT_URI = '/'
 exports.TELEPORT_JOIN_STR = '\n'
 
-exports.COMMENTS_MATCH = /(\/\*([^*]|[\r\n]|(\*+([^*\/]|[\r\n])))*\*+\/)|((^|\n)[^\'\"\n]*\/\/[^\n]*)/g
-exports.REQUIRE_MATCH = /(^|[^\w\_])require\s*\(('|")([\w\W]*?)('|")\)/g
 
-exports.TRANSPORT_WRAPPER = 'define("{{id}}", [{{dependencies}}], function(require, exports, module, undefined) { {{source}} \n/**/});'
 exports.MODULE_NOT_FOUND_ERROR = '\n  throw new Error("Required module `{{id}}` can\'t be found under the path: `{{path}}`")'
 exports.PACKAGE_NOT_FOUND_ERROR = '\n throw new Error("Package `{{name}}` is not listed in the package dependencies. Please add it in to the `package.json` if you need to load it!")'
 
