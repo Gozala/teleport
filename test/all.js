@@ -1,6 +1,6 @@
 'use strict'
 
-exports['test utils'] = require('./utils')
-exports['test catalog'] = require('./catalog')
+exports['test module utils'] = require('./utils/module')
+exports['test package utils'] = require('./utils/package')
 
 if (module == require.main) require('test').run(exports)

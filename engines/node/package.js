@@ -1,31 +1,17 @@
 'use strict'
 
 var fs =  require('promised-fs')
-  , when = require('q').when
+  , packageUtils = require('teleport/utils/package')
   , Trait = require('light-traits').Trait
   , CONST = require('teleport/strings')
   , Q = require('q'), when = Q.when, reject = Q.reject
   , pu = require('promised-utils'), Promised = pu.Promised, all = pu.all
   , PackageModules = require('./module').PackageModules
-  , _ = require('underscore')._
 
-  , EXTENSION = CONST.EXTENSION
-  , SEPARATOR = CONST.SEPARATOR
-  , VERSION_MARK = CONST.VERSION_MARK
-  , VERSION = CONST.VERSION
-  , PREFIX = CONST.PREFIX
-  , LIB = CONST.LIB
-  , TRANSPORT_WRAPPER = CONST.TRANSPORT_WRAPPER
-  , MODULE_NOT_FOUND_ERROR = CONST.MODULE_NOT_FOUND_ERROR
-  , PACKAGE_NOT_FOUND_ERROR = CONST.PACKAGE_NOT_FOUND_ERROR
-  , COMMENTS_MATCH = CONST.COMMENTS_MATCH
-  , REQUIRE_MATCH = CONST.REQUIRE_MATCH
-  , root = CONST.NPM_DIR
-  , DESCRIPTOR_PATH = fs.join(VERSION, PREFIX)
+  , DESCRIPTOR_PATH = fs.join(CONST.VERSION, CONST.PREFIX)
   , DESCRIPTOR_FILE = CONST.DESCRIPTOR_FILE
   , JSON_PARSE_ERROR = 'Failed to parse package descriptor: '
   , ERR_NOT_IN_PACKAGE = CONST.ERR_NOT_IN_PACKAGE
-  , DESCRIPTOR_FILE = CONST.DESCRIPTOR_FILE
 
 
 function flattenObject(object) {
@@ -51,106 +37,27 @@ function mapJSPathsToIds(paths, packageName, root) {
   })
 }
 
-var descriptorProperties =
-[ 'name'
-, 'version'
-, 'description'
-, 'keywords'
-, 'main'
-, 'maintainers'
-, 'contributors'
-, 'licenses'
-, 'bugs'
-, 'repositories'
-, 'homepage'
-, 'implements'
-, 'scripts'
-, 'error'
-]
-
-function normilizeDescriptorProperties(descriptor) {
-  var teleport = descriptor.overlay.teleport
-  descriptorProperties.forEach(function(key) {
-    if (key in descriptor) teleport[key] = descriptor[key]
-  })
-}
-
-function normilizeDescriptor(descriptor) {
-  var overlay = descriptor.overlay || (descriptor.overlay = { teleport: {} })
-  var teleport = overlay.teleport
-  if (!teleport) teleport = overlay.teleport = {}
-  normilizeDescriptorProperties(descriptor)
-  normilizeDescriptorDirectories(descriptor)
-  normilizeDescriptorDependencies(descriptor)
-  normilizeDescriptorModules(descriptor)
-  return descriptor
-}
-
-function normilizeDescriptorDirectories(descriptor) {
-  // Getting overlay metadata
-  var teleport = descriptor.overlay.teleport
-  // If `directories` property does not exists in the `teleport` overlay
-  // copying it from descriptor root, if it's not there either creating a
-  // default.
-  if (!teleport.directories)
-    teleport.directories = descriptor.directories || { lib: './lib' }
-  // If `directories` property is not an object then making `lib` property of
-  // directories a stringified version of it.
-  if ('object' !== typeof teleport.directories)
-    teleport.directories = { lib: String(teleport.directories) }
-  return descriptor
-}
-
-function normilizeDescriptorDependencies(descriptor) {
-  var teleport = descriptor.overlay.teleport
-  if (!teleport.dependencies) {
-    if (descriptor.dependencies)
-      teleport.dependencies = _.clone(descriptor.dependencies)
-    else teleport.dependencies = {}
-  }
-  return descriptor
-}
-
-function normilizeDescriptorModules(descriptor) {
-  var teleport = descriptor.overlay.teleport
-  var modules = teleport.modules
-  var main
-  if (!modules) {
-    if (descriptor.modules)
-      modules = teleport.modules = _.clone(descriptor.modules)
-    else modules = teleport.modules = {}
-  }
-  if (!(descriptor.name in modules)) {
-    main = teleport.main || descriptor.main
-    if (main) modules[descriptor.name] = main
-  }
-}
-
-function addModulesToDescriptor(descriptor, extension) {
-  var modules = descriptor.overlay.teleport.modules
-  Object.keys(extension).forEach(function(key) {
-    if (!(key in modules)) modules[key] = extension[key]
-  })
-}
-
 // Function takes path to the package descriptor parses it. It also applies overlay
 // metadata. This is a promised function so it can take promises and will
 // return promise of parsed JSON back.
 function Descriptor(options) {
   return when(fs.path([options.path, DESCRIPTOR_FILE]).read(), function fileRead(content) {
-      var descriptor = {}
+      var descriptor
       try {
-        descriptor = Object.create(JSON.parse(content))
+        descriptor = JSON.parse(content)
       } catch (error) {
         var errors = options.errors || (options.errors = [])
         errors.push(
         { type: JSON_PARSE_ERROR
         , error: error
         })
-        descriptor = Object.create({ name: options.name, error: String(error) })
+        descriptor = { name: options.name, error: String(error) }
       }
+      
       return Object.create(options, {
-        descriptor: { value: normilizeDescriptor(descriptor) }
+        descriptor: {
+          value: packageUtils.normalizeOverlay(descriptor, 'teleport')
+        }
       })
   })
 }
@@ -204,14 +111,15 @@ var PackageTrait = Trait
     }
   , get modules() {
       if (!this._modules) {
+        var overlay = this.descriptor.overlay.teleport
         this._modules = when
-        ( mapJSPathsToIds(filterJSPaths(fs.listTree(this.libPath)), this.name, this.descriptor.overlay.teleport.directories.lib)
+        ( mapJSPathsToIds(filterJSPaths(fs.listTree(this.libPath)), this.name, overlay.directories.lib)
         , function (modules) {
-            addModulesToDescriptor(this.descriptor, modules)
-            return this.descriptor.overlay.teleport.modules
+            packageUtils.addModuleAliases(overlay, modules)
+            return overlay.modules
           }.bind(this)
         , function () {
-            return this.descriptor.overlay.teleport.modules
+            return overlay.modules
           }.bind(this)
         )
       }

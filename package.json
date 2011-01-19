@@ -12,6 +12,7 @@
 , "bugs": { "web": "http://github.com/Gozala/teleport/issues/" }
 , "modules":
   { "utils/module": "./engines/common/utils/module"
+  , "utils/package": "./engines/common/utils/package"
   }
 , "overlay":
   { "node":
