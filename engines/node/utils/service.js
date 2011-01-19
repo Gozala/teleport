@@ -7,7 +7,7 @@ var http = require('http')
 ,   all = require('promised-utils').all
 ,   Registry = require('teleport/registry').Registry
 ,   Promised = require('promised-utils').Promised
-,   activePackage = require('teleport/package').descriptor
+,   getDescriptor = require('teleport/project').getDescriptor
 ,   CONST = require('teleport/strings')
 ,   parseURL = require('url').parse
 
@@ -106,13 +106,8 @@ function getPackageContentForPath(pack, path, packageName) {
 }
 
 exports.activate = function activate() {
-  return when
-  ( activePackage()
-  , function onFound(descriptor) {
-      start(JSON.parse(descriptor).name)
-    }
-  , start.bind(null, 'teleport')
-  )
+  return when(getDescriptor().get("name"), start.bind(null),
+              start.bind(null, 'teleport'))
 }
 
 
