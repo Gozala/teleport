@@ -1,6 +1,7 @@
 'use strict'
 
-var owns = Function.prototype.call.bind(Object.prototype.hasOwnProperty)
+var owns = require("core-utils").owns
+var merge = require("core-utils/object").merge
 
 /**
  * Creates default package descriptor object, where all the optional property
@@ -12,20 +13,14 @@ function DescriptorTemplate() {
     version: '{{version}}',
     description: '{{description}}',
     keywords: [],
-    homepage: null,
-    author: null,
-    contributors: null,
     // files: null,
-    main: null,
     // bin: null,
     modules: {},
     // man: null,
     directories: {
       lib: './lib'
     },
-    repository: null,
     scripts: {},
-    dependencies: null
   }
 }
 exports.DescriptorTemplate = DescriptorTemplate
@@ -64,19 +59,19 @@ function normalizeOverlay(descriptor, name) {
   // the fields to the overlay. We use clone since we don't want to propagate
   // field changes in the overlay to main descriptor.
   var descriptorFields = JSON.parse(JSON.stringify(descriptor))
-  var defaultFields = DescriptorTemplate();
-  // Now that we are sure that we have required overlay we go and copy all
-  // the supported descriptor fields that are not yet present in desired
-  // overlay.
-  Object.keys(defaultFields).forEach(function(name) {
-    // If overlay hos no property and it's contained in package descriptor
-    // or it's a truthy value in defaults copy it over to overlay.
-    if (!owns(overlay, name) && (descriptorFields[name] || defaultFields[name]))
-      overlay[name] = descriptorFields[name] || defaultFields[name]
-  })
+  normalizeDescriptor(merge(overlay, descriptorFields))
   return descriptor
 }
 exports.normalizeOverlay = normalizeOverlay
+
+function normalizeDescriptor(descriptor) {
+  descriptor = merge(descriptor, DescriptorTemplate())
+  // If descriptor contains `main` field, it's an alias to the main module that
+  // we add to the `modules` field if it is not already there.
+  if (owns(descriptor, 'main')) addModuleAlias(descriptor, "", descriptor.main)
+  return descriptor
+}
+exports.normalizeDescriptor = normalizeDescriptor
 
 /**
  * Function ensures that given package `descriptor` contains field with a
@@ -92,6 +87,13 @@ function ensureField(descriptor, name) {
 }
 exports.ensureField = ensureField
 
+function addModuleAlias(descriptor, alias, path) {
+  var modules = ensureField(descriptor, 'modules').modules
+  if (!owns(modules, alias)) modules[alias] = path
+  return descriptor
+}
+exports.addModuleAlias = addModuleAlias
+
 /**
  * Adds not yet existing module aliases to the given package `descriptor`
  * from the given `aliases` map.
@@ -101,9 +103,8 @@ exports.ensureField = ensureField
  *    Map of module aliases (relative_id -> relative_path).
  */
 function addModuleAliases(descriptor, aliases) {
-  var modules = ensureField(descriptor, 'modules').modules
-  Object.keys(aliases).forEach(function(name) {
-    if (!owns(modules, name)) modules[name] = aliases[name]
+  Object.keys(aliases).forEach(function(alias) {
+    addModuleAlias(descriptor, alias, aliases[alias])
   })
   return descriptor
 }

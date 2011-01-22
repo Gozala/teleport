@@ -12,6 +12,8 @@ var fs =  require('promised-fs')
   , DESCRIPTOR_FILE = CONST.DESCRIPTOR_FILE
   , JSON_PARSE_ERROR = 'Failed to parse package descriptor: '
   , ERR_NOT_IN_PACKAGE = CONST.ERR_NOT_IN_PACKAGE
+  , DEPENDENCIES_DIR = 'packages'
+
 
 /**
  * Finds the root of the project package. Optionally takes `path` in the
@@ -19,7 +21,7 @@ var fs =  require('promised-fs')
  * @param {String} path
  * @returns {Promise(String)}
  */
-function getRoot(path) {
+var getRoot = Promised.sync(function getRoot(path) {
   path = path ? fs.Path(String(path)) : fs.workingDirectoryPath()
   return when(path.list(), function(entries) {
     if (0 <= entries.indexOf(DESCRIPTOR_FILE)) return String(path)
@@ -27,9 +29,15 @@ function getRoot(path) {
     if (String(path) == String(directory)) return reject(ERR_NOT_IN_PACKAGE)
     return getRoot(directory)
   })
-}
-exports.getRoot = Promised.sync(getRoot)
+})
+exports.getRoot = getRoot
 
+function getDependenciesPath(path) {
+  return when(getRoot(path), function onPath(path) {
+    return fs.join(path, DEPENDENCIES_DIR)
+  })
+}
+exports.getDependenciesPath = getDependenciesPath
 /**
  * Returns promise for the parsed `package.json`.
  */
@@ -38,5 +46,9 @@ function getDescriptor(path) {
     return when(fs.read(fs.join(root, DESCRIPTOR_FILE)), JSON.parse)
   }))
 }
-
 exports.getDescriptor = getDescriptor
+
+function getName(path) {
+  return getDescriptor(path).get('name')
+}
+exports.getName = getName

@@ -26,12 +26,12 @@ function filterJSPaths(paths) {
   })
 }
 
-function mapJSPathsToIds(paths, packageName, root) {
+function mapJSPathsToIds(paths, root) {
   return when(paths, function(paths) {
     var map = {}
     paths.forEach(function (path) {
-      var subpath = fs.join(packageName, path)
-      map[subpath.substr(subpath, subpath.length - 3)] = fs.join(root, path)
+      var subpath = fs.join(".", path)
+      map[subpath.substr(0, subpath.length - 3)] = fs.join(root, path)
     })
     return map
   })
@@ -110,17 +110,17 @@ var PackageTrait = Trait
       return path.read()
     }
   , get modules() {
+      var overlay
       if (!this._modules) {
-        var overlay = this.descriptor.overlay.teleport
+        overlay = this.descriptor.overlay.teleport
         this._modules = when
-        ( mapJSPathsToIds(filterJSPaths(fs.listTree(this.libPath)), this.name, overlay.directories.lib)
+        ( mapJSPathsToIds(filterJSPaths(fs.listTree(this.libPath)), overlay.directories.lib)
         , function (modules) {
-            packageUtils.addModuleAliases(overlay, modules)
-            return overlay.modules
-          }.bind(this)
+            return packageUtils.addModuleAliases(overlay, modules).modules
+          }
         , function () {
             return overlay.modules
-          }.bind(this)
+          }
         )
       }
       return this._modules
