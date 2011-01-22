@@ -1,5 +1,5 @@
 { "name": "teleport"
-, "version": "0.2.6"
+, "version": "0.2.7"
 , "description": "CommonJS modules 1.0 loader for browsers."
 , "homepage": "http://github.com/Gozala/teleport/"
 , "keywords": ["commonjs", "modules", "require"]
@@ -21,11 +21,12 @@
       , "system": ">=0.0.4"
       , "q": ">=0.1.5"
       , "promised-fs": ">=0.0.7"
-      , "promised-utils": ">=0.0.7"
+      , "promised-utils": ">=0.0.8"
       , "markdown-js": ">=0.0.3"
       , "promised-http": ">=0.0.2"
       , "mustache": ">=0.3.0"
       , "backbone": ">=0.3.3"
+      , "core-utils": ">=0.0.1"
       }
     , "directories":
       { "lib": "./engines/node"
