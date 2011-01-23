@@ -5,6 +5,7 @@ var SEPARATOR = '/'
   , COMMENTS_MATCH = /(\/\*([^*]|[\r\n]|(\*+([^*\/]|[\r\n])))*\*+\/)|((^|\n)[^\'\"\n]*\/\/[^\n]*)/g
   , REQUIRE_MATCH = /(^|[^\w\_])require\s*\(('|")([\w\W]*?)('|")\)/g
   , TRANSPORT_WRAPPER = 'define("{{id}}", [{{dependencies}}], function(require, exports, module, undefined) { {{source}} \n/**/});'
+  , MODULE_EXTENSION = '.js'
 
 /**
  * Returns name of the package from a given top id.
@@ -60,6 +61,7 @@ exports.isMainModule = isMainModule
  * @returns {Boolean}
  */
 function isModuleIdRelative(id) {
+
   // If module id does not starts with '.' then it's absolute.
   return '.' === id.charAt(0)
 }
@@ -79,6 +81,10 @@ function getExtension(id) {
 }
 exports.getExtension = getExtension
 
+function ensureExtension(path) {
+  return getExtension(path) ? path : path.concat(MODULE_EXTENSION)
+}
+exports.ensureExtension = ensureExtension
 /**
  * Function takes absolute module id (`baseId`) and it's relative `id` and
  * returns resolved absoulte `id`.

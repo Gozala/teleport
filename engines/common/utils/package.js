@@ -20,7 +20,9 @@ function DescriptorTemplate() {
     directories: {
       lib: './lib'
     },
-    scripts: {},
+    dependencies: {},
+    files: {},
+    scripts: {}
   }
 }
 exports.DescriptorTemplate = DescriptorTemplate

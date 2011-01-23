@@ -12,8 +12,13 @@ exports.reflect = function reflect(path) {
   var name = projectUtils.getName(path)
   var destinationPath = projectUtils.getDependenciesPath(path)
   var catalog = Registry().get('packages')
-  
-  return reflectPackage(destinationPath, name, catalog, [])
+  var packages = []
+
+  return Q.when(reflectPackage(destinationPath, name, catalog, packages), function() {
+    console.log('Reflected packages:\n ', packages.join('\n  '))
+  }, function (reason) {
+    console.error("Failed to reflect cause:", reason)
+  })
 }
 
 
@@ -23,29 +28,30 @@ var reflectPackage = Promised(function reflectPackage(path, name, catalog, $$) {
   var pack = catalog[name]
   var modules = pack.get('modules')
   var dependencies = pack.get('dependencies')
-  console.log("Reflect package:" + name)
   var modulesReady = writeModules(destinationPath, modules, pack)
   var dependenciesReady = reflectPackages(path, dependencies, $$)
-  return all(modulesReady, dependenciesReady)
+  return all([modulesReady, dependenciesReady])
 })
 exports.reflectPackage = reflectPackage
 
 var reflectPackages = Promised(function reflectPackages(path, catalog, $$) {
-  return all(Object.keys(catalog).filter(function(name) {
-                                    return !~$$.indexOf(name)
-                                  }).map(function (name) {
-                                    return reflectPackage(path, name, catalog, $$)
-                                  }))
+  return all(Object.keys(catalog).
+            filter(function(name) { return !~$$.indexOf(name) }).
+            map(function (name) {
+              return reflectPackage(path, name, catalog, $$)
+            }))
 })
 exports.reflectPackages = reflectPackages
 
 var writeModules = Promised(function writeModules(path, modules, catalog) {
-  all(Object.keys(modules).map(function (id) {
-    var destinationPath = fs.join(path, id)
-    var source = catalog.getModulePath(id)
-    return Q.when(source, function() {
-      console.log("   " + id)
+  return all(Object.keys(modules).map(function (id) {
+    id = id ? fs.join(catalog.name, id) : catalog.name
+    var destinationPath = moduleUtils.ensureExtension(fs.join(path, id))
+    var destinationDirectory = fs.directory(destinationPath)
+    var source = catalog.getModuleTransport(id)
+    console.log('Writing module: ', id, '\n  ', destinationPath)
+    return Q.when(fs.makeTree(destinationDirectory), function() {
+      return fs.write(destinationPath, source)
     })
-    //return fs.write(path, catalog.getModuleTransport(id))
   }))
 })
