@@ -18,6 +18,7 @@ var http = require('http')
 ,   playground = lib.join(CONST.TELEPORT_PLAYGROUND).read()
 ,   deprecatedPath = 'packages/teleport.js'
 ,   newTeleportPath = 'support/teleport/teleport.js'
+,   DEP_DIR = '/support/'
 
 var registry = Registry();
 
@@ -33,8 +34,8 @@ function redirectTo(url, response) {
 }
 
 function makePackageRedirectURL(name, url) {
-  var redirectURL = '/support/' + name
-  if (url !== '/support' && url !== '/support/') redirectURL += url
+  var redirectURL = DEP_DIR + name
+  if (url !== '/support' && url !== DEP_DIR) redirectURL += url
   return redirectURL
 }
 
@@ -54,15 +55,20 @@ function normalizePath(path) {
   return path
 }
 
+function stripOutDependenciesPath(path) {
+  return 0 == path.indexOf(DEP_DIR) ? path.substr(DEP_DIR.length) : path
+
+}
 function getPackageName(path) {
-  path = String(path).replace('/support/', '')
-  return path.substr(0, path.indexOf('/'))
+  path = stripOutDependenciesPath(String(path))
+  parts = path.split('/')
+  return parts[0] || parts[1]
 }
 
 function getPackageRelativePath(path, name) {
-  var packageRoot = '/support/'
-  if (name) packageRoot += name
-  return String(path).replace(packageRoot, '')
+  path = stripOutDependenciesPath(String(path))
+  if (name) path = path.substr(path.indexOf(name) + name.length)
+  return path
 }
 
 function isJSPath(path) {
@@ -75,8 +81,8 @@ function isModuleRequest(url) {
   return 0 <= String(url.search).indexOf('module') && isJSPath(url.pathname)
 }
 
-function getModuleId(path) {
-  var id = getPackageRelativePath(path)
+function getModuleId(path, name) {
+  var id = getPackageRelativePath(path, name)
   if (id == path) id = '.' + id
   else id = removeJSExtension(id)
   return id
@@ -90,7 +96,7 @@ function isTransportRequest(url) {
 }
 
 function isRegistryRequest(url) {
-  return url === '/support/registry.json'
+  return url === '/registry.json'
 }
 
 function getPackageContentForPath(pack, path, packageName) {
@@ -113,13 +119,12 @@ exports.activate = function activate() {
 
 function start(name) {
   server.listen(4747)
-  console.log('Teleport is activated: http://localhost:4747/support/' + name)
+  console.log('Teleport is activated: http://localhost:4747/' + name)
   server.on('request', function(request, response) {
     var url = parseURL(request.url)
       , needToWrap = isTransportRequest(url)
       , path = url.pathname
       , normalizedPath = normalizePath(path)
-      , index = path.indexOf(CONST.PACKAGES_URI_PATH)
       , relativePath
       , packageName
       , mime
@@ -131,11 +136,12 @@ function start(name) {
     // instead.
     if (isRegistryRequest(path))
       content = registry.invoke('stringify', ['    '])
-    else if (!isUnderPackages(path))
-      redirectTo(makePackageRedirectURL(name, normalizedPath), response)
+    // If request url does not ends with '/' and it's not direct url to file
+    // we know add trailing slash ourself to have correct relative paths.
     else if (normalizedPath !== path) redirectTo(normalizedPath, response)
     else {
       packageName = getPackageName(path)
+
       relativePath = getPackageRelativePath(compeletPath(path), packageName)
       mime = mimeType(String(relativePath))
 

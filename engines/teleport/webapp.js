@@ -98,7 +98,7 @@ exports.PackageView = PackageView
 var PackageDetailsView = View.extend(
 { el: document.getElementById('package-details')
 , template:
-  [ '<h2 class="name"><a href="/support/{{name}}/">{{name}}</a></h2>'
+  [ '<h2 class="name"><a href="/{{name}}/">{{name}}</a></h2>'
   , '{{#description}}<div class="description">{{description}}</div>{{/description}}'
   , '<br/>'
   , '{{#version}}<div class="vesion">Version: {{version}}<div>{{/version}}'
