@@ -12,7 +12,7 @@ var fs =  require('promised-fs')
   , DESCRIPTOR_FILE = CONST.DESCRIPTOR_FILE
   , JSON_PARSE_ERROR = 'Failed to parse package descriptor: '
   , ERR_NOT_IN_PACKAGE = CONST.ERR_NOT_IN_PACKAGE
-  , DEPENDENCIES_DIR = 'packages'
+  , DEPENDENCIES_DIR = 'support'
 
 
 /**
