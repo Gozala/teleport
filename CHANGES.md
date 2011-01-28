@@ -1,5 +1,14 @@
 # Change Log #
 
+## 0.2.7 ##
+
+- Renamed virtualized directory "packages" -> "support".
+- Packages are now accessible under `localhost/{{name}}` instead of
+  `localhost/packages/{{name}}`
+- Teleport dashboard was factored out to a separate project so that it's
+  dependencies won't be inherited by dependant packages.
+- Foundation for `teleport reflect` command.
+
 ## 0.2.6 ##
 
 - Fixed bug that preventing teleport activation from non-package directories.
