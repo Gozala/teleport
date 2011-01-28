@@ -24,7 +24,7 @@
   , "promised-http": ">=0.0.2"
   , "mustache": ">=0.3.0"
   , "backbone": ">=0.3.3"
-  , "core-utils": ">=0.0.1"
+  , "core-utils": ">=0.0.2"
   , "teleport-dashboard": ">=0.0.1"
   }
 , "overlay":
@@ -34,7 +34,9 @@
       , "test": "./test"
       }
     }
-  , "teleport": {}
+  , "teleport": {
+      "dependencies": {}
+    }
   }
 , "bin" : { "teleport" : "./engines/node/commands/commands.js" }
 , "scripts": { "test": "node test/all.js" }

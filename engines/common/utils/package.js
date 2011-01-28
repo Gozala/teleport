@@ -1,7 +1,9 @@
 'use strict'
 
 var owns = require("core-utils").owns
-var merge = require("core-utils/object").merge
+var utils = require("core-utils/object"),
+            merge = utils.merge,
+            supplement = utils.supplement
 
 /**
  * Creates default package descriptor object, where all the optional property
@@ -57,11 +59,13 @@ exports.ensureOverlay = ensureOverlay
 function normalizeOverlay(descriptor, name) {
   // Ensuring that we have desired overlay in a given package `descriptor`.
   var overlay = ensureOverlay(descriptor, name).overlay[name]
-  // Creating clone of the package descriptor from which we will copy all 
+  // Creating clone of the package descriptor from which we will copy all
   // the fields to the overlay. We use clone since we don't want to propagate
   // field changes in the overlay to main descriptor.
   var descriptorFields = JSON.parse(JSON.stringify(descriptor))
-  normalizeDescriptor(merge(overlay, descriptorFields))
+  // Removing overlay field since it will make no sense in overlay itself.
+  delete descriptorFields.overlay
+  normalizeDescriptor(supplement(overlay, descriptorFields))
   return descriptor
 }
 exports.normalizeOverlay = normalizeOverlay
