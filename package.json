@@ -14,36 +14,27 @@
   { "utils/module": "./engines/common/utils/module"
   , "utils/package": "./engines/common/utils/package"
   }
+, "dependencies":
+  { "test": ">=0.0.10"
+  , "system": ">=0.0.4"
+  , "q": ">=0.1.5"
+  , "promised-fs": ">=0.0.8"
+  , "promised-utils": ">=0.0.8"
+  , "markdown-js": ">=0.0.3"
+  , "promised-http": ">=0.0.2"
+  , "mustache": ">=0.3.0"
+  , "backbone": ">=0.3.3"
+  , "core-utils": ">=0.0.1"
+  , "teleport-dashboard": ">=0.0.1"
+  }
 , "overlay":
   { "node":
-    { "dependencies":
-      { "test": ">=0.0.10"
-      , "system": ">=0.0.4"
-      , "q": ">=0.1.5"
-      , "promised-fs": ">=0.0.7"
-      , "promised-utils": ">=0.0.8"
-      , "markdown-js": ">=0.0.3"
-      , "promised-http": ">=0.0.2"
-      , "mustache": ">=0.3.0"
-      , "backbone": ">=0.3.3"
-      , "core-utils": ">=0.0.1"
-      }
-    , "directories":
+    { "directories":
       { "lib": "./engines/node"
       , "test": "./test"
       }
     }
-  , "teleport":
-    { "dependencies":
-      { "markdown-js": ">=0.0.3"
-      , "promised-http": ">=0.0.2"
-      , "q": ">=0.1.5"
-      , "mustache": ">=0.3.0"
-      , "backbone": ">=0.3.3"
-      }
-    , "main": "./engines/teleport/teleport.js"
-    , "directories": { "lib": "./engines/teleport" }
-    }
+  , "teleport": {}
   }
 , "bin" : { "teleport" : "./engines/node/commands/commands.js" }
 , "scripts": { "test": "node test/all.js" }
