@@ -113,7 +113,7 @@ function getPackageContentForPath(pack, path, packageName) {
 
 exports.activate = function activate() {
   return when(getDescriptor().get("name"), start.bind(null),
-              start.bind(null, 'teleport'))
+              start.bind(null, 'teleport-dashboard'))
 }
 
 
