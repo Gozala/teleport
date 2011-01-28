@@ -95,7 +95,9 @@ var PackageTrait = Trait
         }, function() {})
       })
       return Promised(when(all(dependencies), function() {
-        value.teleport = packages.teleport
+        // Adding teleport as non-explicit dependency in order to avoid
+        // inherited dependencies when reflecting package in AMD.
+        nestedDependencies.teleport = packages.teleport
         return this._dependencies = value
       }))
     }
