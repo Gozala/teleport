@@ -17,13 +17,13 @@ var http = require('http')
 ,   engine = lib.join(CONST.ENGINES_DIR, CONST.TELEPORT_ENGINE_FILE).read()
 ,   playground = lib.join(CONST.TELEPORT_PLAYGROUND).read()
 ,   deprecatedPath = 'packages/teleport.js'
-,   newTeleportPath = 'packages/teleport/teleport.js'
+,   newTeleportPath = 'support/teleport/teleport.js'
 
 var registry = Registry();
 
 
 function isUnderPackages(path) {
-  var index = path.indexOf('packages/')
+  var index = path.indexOf('support/')
   return index >= 0 && index <= 1 && 10 < path.length
 }
 
@@ -33,8 +33,8 @@ function redirectTo(url, response) {
 }
 
 function makePackageRedirectURL(name, url) {
-  var redirectURL = '/packages/' + name
-  if (url !== '/packages' && url !== '/packages/') redirectURL += url
+  var redirectURL = '/support/' + name
+  if (url !== '/support' && url !== '/support/') redirectURL += url
   return redirectURL
 }
 
@@ -55,12 +55,12 @@ function normalizePath(path) {
 }
 
 function getPackageName(path) {
-  path = String(path).replace('/packages/', '')
+  path = String(path).replace('/support/', '')
   return path.substr(0, path.indexOf('/'))
 }
 
 function getPackageRelativePath(path, name) {
-  var packageRoot = '/packages/'
+  var packageRoot = '/support/'
   if (name) packageRoot += name
   return String(path).replace(packageRoot, '')
 }
@@ -90,7 +90,7 @@ function isTransportRequest(url) {
 }
 
 function isRegistryRequest(url) {
-  return url === '/packages/registry.json'
+  return url === '/support/registry.json'
 }
 
 function getPackageContentForPath(pack, path, packageName) {
@@ -113,7 +113,7 @@ exports.activate = function activate() {
 
 function start(name) {
   server.listen(4747)
-  console.log('Teleport is activated: http://localhost:4747/packages/' + name)
+  console.log('Teleport is activated: http://localhost:4747/support/' + name)
   server.on('request', function(request, response) {
     var url = parseURL(request.url)
       , needToWrap = isTransportRequest(url)

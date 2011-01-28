@@ -172,7 +172,7 @@ var teleport = new function Teleport(global, undefined) {
 
   function resolveURL(id) {
     id = resolveId(id, BASE)
-    id = 0 < id.indexOf('://') ? id : 'packages/' + id + '.js'
+    id = 0 < id.indexOf('://') ? id : 'support/' + id + '.js'
     return id + '?module&transport'
   }
 

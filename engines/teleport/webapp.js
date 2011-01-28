@@ -54,7 +54,12 @@ var Packages = Collection.extend(
     for (var name in packages) {
       var data = packages[name].overlay.teleport
       data.modules = Object.keys(data.modules).map(function(id) {
-        return { id: id, src: encodeURIComponent(id), path: data.modules[id] }
+        id = id ? name + '/' + id : name
+        return {
+          id: id,
+          src: encodeURIComponent(id),
+          path: name  + data.modules[id]
+        }
       })
       value.push(data)
     }
@@ -93,7 +98,7 @@ exports.PackageView = PackageView
 var PackageDetailsView = View.extend(
 { el: document.getElementById('package-details')
 , template:
-  [ '<h2 class="name"><a href="/packages/{{name}}/">{{name}}</a></h2>'
+  [ '<h2 class="name"><a href="/support/{{name}}/">{{name}}</a></h2>'
   , '{{#description}}<div class="description">{{description}}</div>{{/description}}'
   , '<br/>'
   , '{{#version}}<div class="vesion">Version: {{version}}<div>{{/version}}'
