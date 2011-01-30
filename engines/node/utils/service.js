@@ -15,12 +15,13 @@ var http = require('http')
 ,   lib = fs.Path(module.filename).directory().directory()
 ,   core = lib.join(CONST.TELEPORT_CORE_FILE).read()
 ,   engine = lib.join(CONST.ENGINES_DIR, CONST.TELEPORT_ENGINE_FILE).read()
-,   playground = lib.join(CONST.TELEPORT_PLAYGROUND).read()
 ,   deprecatedPath = 'packages/teleport.js'
 ,   newTeleportPath = 'support/teleport/teleport.js'
 ,   DEP_DIR = '/support/'
 
 var registry = Registry();
+var playground = registry.invoke('packages.teleport-dashboard.getContent'
+                                , ['resources/pages/404.html'])
 
 
 function isUnderPackages(path) {
@@ -136,12 +137,17 @@ function start(name) {
     // instead.
     if (isRegistryRequest(path))
       content = registry.invoke('stringify', ['    '])
-    // If request url does not ends with '/' and it's not direct url to file
-    // we know add trailing slash ourself to have correct relative paths.
+    // If request path does not ends with '/' and it's not request to file
+    // we add trailing slash ourself, so that all browsers will generate to
+    // correct relative paths.
     else if (normalizedPath !== path) redirectTo(normalizedPath, response)
+    // If request path is just '/' then we don't have any package so we
+    // redirect to default teleport-dashboard.
+    else if (path == '/') redirectTo('/teleport-dashboard/', response)
+    // Otherwise we detect package name and path of the file that is being
+    // requested from that package.
     else {
       packageName = getPackageName(path)
-
       relativePath = getPackageRelativePath(compeletPath(path), packageName)
       mime = mimeType(String(relativePath))
 
