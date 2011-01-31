@@ -25,7 +25,7 @@
   , "mustache": ">=0.3.0"
   , "backbone": ">=0.3.3"
   , "core-utils": ">=0.0.2"
-  , "teleport-dashboard": ">=0.0.2"
+  , "teleport-dashboard": ">=0.0.4"
   }
 , "overlay":
   { "node":
