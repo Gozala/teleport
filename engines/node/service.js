@@ -1,7 +1,7 @@
 'use strict'
 
 var http = require('http')
-,   mimeType = require('./mime').mimeType
+,   mimeType = require('mime').lookup
 ,   fs =  require('promised-fs')
 ,   when = require('q').when
 ,   all = require('promised-utils').all
