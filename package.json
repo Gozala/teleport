@@ -10,12 +10,9 @@
   , "url": "git://github.com/Gozala/teleport.git"
   }
 , "bugs": { "web": "http://github.com/Gozala/teleport/issues/" }
-, "modules":
-  { "utils/module": "./engines/common/utils/module"
-  , "utils/package": "./engines/common/utils/package"
-  }
 , "dependencies":
   { "test": ">=0.0.10"
+  , "npm": ">=0.2.16"
   , "mime": ">=1.2.1"
   , "system": ">=0.0.4"
   , "q": ">=0.2.5"
@@ -31,8 +28,12 @@
       , "test": "./test"
       }
     }
-  , "teleport": {
-      "dependencies": {}
+  , "teleport":
+    { "dependencies": {}
+    , "modules":
+      { "utils/module": "./engines/common/utils/module"
+      , "utils/package": "./engines/common/utils/package"
+      }
     }
   }
 , "bin" : { "teleport" : "./engines/node/commands/commands.js" }
