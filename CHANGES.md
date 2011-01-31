@@ -8,6 +8,8 @@
 - Teleport dashboard was factored out to a separate project so that it's
   dependencies won't be inherited by dependant packages.
 - Foundation for `teleport reflect` command.
+- Teleport dashboard visualizes more package metadata (modules, dependencies,
+  tags).
 
 ## 0.2.6 ##
 
