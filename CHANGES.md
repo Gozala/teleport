@@ -1,5 +1,11 @@
 # Change Log #
 
+## 0.2.8 ##
+
+- Added a workaround to avoid npm's does confusion from a teleport's package
+  layout.
+- Switching to an external mime service.
+
 ## 0.2.7 ##
 
 - Renamed virtualized directory "packages" -> "support".
