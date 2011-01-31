@@ -17,7 +17,7 @@
 , "dependencies":
   { "test": ">=0.0.10"
   , "system": ">=0.0.4"
-  , "q": ">=0.1.5"
+  , "q": ">=0.2.5"
   , "promised-fs": ">=0.0.8"
   , "promised-utils": ">=0.0.8"
   , "markdown-js": ">=0.0.3"
