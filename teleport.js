@@ -8,6 +8,9 @@ var teleport = new function Teleport(global, undefined) {
     , mainId
     , descriptors = {}
     , modules = {}
+    , anonymousModules = []
+    , isArray
+    , _toString = Object.prototype.toString
 
     , MAIN_ATTR = 'data-main'
     , SCRIPT_ELEMENT = 'script'
@@ -18,8 +21,12 @@ var teleport = new function Teleport(global, undefined) {
     , isBrowser = UNDEFINED !== typeof window && window.window === window
     , hasNewJS = isBrowser && 0 <= navigator.userAgent.indexOf('Firefox')
     , isWorker = !isBrowser && UNDEFINED !== typeof importScripts
+    , COMMENTS_MATCH = /(\/\*([^*]|[\r\n]|(\*+([^*\/]|[\r\n])))*\*+\/)|((^|\n)[^\'\"\n]*\/\/[^\n]*)/g
+    , REQUIRE_MATCH = /(^|[^\w\_])require\s*\(('|")([\w\W]*?)('|")\)/g
+
 
     if (hasNewJS) SCRIPT_TYPE = 'application/javascript;version=1.8'
+
 
   function getBase() {
     var base = (document.baseURI || document.URL).split('?')[0].split('#')[0]
@@ -28,9 +35,41 @@ var teleport = new function Teleport(global, undefined) {
     return base
   }
 
+
+  function isString(value) {
+    return 'string' === typeof value
+  }
+
+  isArray = Array.isArray || function isArray(value) {
+    return '[object Array]' === _toString.call(value)
+  }
+
   function declareDependency(dependent, dependency) {
     ;(dependency.dependents || (dependency.dependents = {}))[dependent.id] =
       dependent
+  }
+
+  /**
+   * Function takes `id` and `source` of module and returns array of absolute
+   * id's of modules that are required by a given module. (function does naive
+   * parsing of source to find all the `require` statements and resolves all the
+   * relative id's in it to a given `id`).
+   * @param {String} id
+   *    Absolute id of a module.
+   * @param {String()} source
+   *    Source of a module.
+   * @returns {String[]}
+   */
+  function getDependencies(id, source) {
+    var dependencies = []
+      , dependency
+    // strip out comments to ignore commented `require` calls.
+    source = String(source).replace(COMMENTS_MATCH, '')
+    while (dependency = REQUIRE_MATCH.exec(source)) {
+      dependency = dependency[3]
+      dependencies.push(resolveId(dependency, id))
+    }
+    return dependencies
   }
 
   function updateDependencyStates(descriptor, dependencies) {
@@ -122,15 +161,32 @@ var teleport = new function Teleport(global, undefined) {
    */
   function define(id, dependencies, factory) {
     var descriptor
-    if (undefined == factory) {
-      factory = dependencies
-      dependencies = undefined
-    }
+    // If first argument is string then it's a module with provided `id` and
+    // we register module immediately
+    if (isString(id)) {
+      // Creating module descriptor for this id.
+      descriptor = ModuleDescriptor(id)
+      // If second argument is not an array then module dependencies have not
+      // been provided and we need to figure them out by source analyses.
+      if (!isArray(dependencies)) {
+        factory = dependencies
+        dependencies = getDependencies(factory, id)
+      }
+      descriptor.dependencies = dependencies
+      descriptor.factory = factory
 
-    descriptor = ModuleDescriptor(id)
-    descriptor.factory = factory
-    descriptor.dependencies = dependencies
-    onDefine(descriptor)
+      onDefine(descriptor)
+    // If `id` is an array then it's an anonymous module with known
+    // dependencies.
+    } else if (isArray(id))
+      // Deferring module registration, to a moment when event listener will
+      // be called so that we will be able to figure out module id.
+      anonymousModules.push({ dependencies: id, factory: dependencies })
+    // If `id` is neither `array` nor `string` then it's factory function
+    // of anonymous module.
+      else
+      // Deferring module registration.
+      anonymousModules.push({ factory: id })
   }
   exports.define = define
 
@@ -185,12 +241,20 @@ var teleport = new function Teleport(global, undefined) {
     }
   }
 
+  function onModuleLoad(event) {
+    var id = (event.currentTarget || event.srcElement).getAttribute('data-id')
+    var deferred = anonymousModules.pop()
+    define(id, deferred.dependencies || deferred.factory, deferred.factory)
+  }
+
   function fetch(descriptor) {
     var module = document.createElement(SCRIPT_ELEMENT)
     module.setAttribute('type', SCRIPT_TYPE)
     module.setAttribute('data-loader', 'teleport')
     module.setAttribute('data-id', descriptor.id)
     module.setAttribute('src', descriptor.url)
+    module.setAttribute('charset', 'utf-8')
+    module.addEventListener('load', onModuleLoad, true)
     document.getElementsByTagName('head')[0].appendChild(module)
   }
 
