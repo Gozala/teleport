@@ -19,7 +19,7 @@
   , "promised-fs": ">=0.0.8"
   , "promised-utils": ">=0.0.8"
   , "core-utils": ">=0.0.2"
-  , "teleport-dashboard": ">=0.0.4"
+  , "teleport-dashboard": ">=0.0.5"
   }
 , "overlay":
   { "node":
