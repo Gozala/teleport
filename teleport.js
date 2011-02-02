@@ -18,6 +18,17 @@ var teleport = new function Teleport(global, undefined) {
     , SCRIPT_TYPE = 'text/javascript'
     , BASE = getBase()
 
+    , hasStandardEvents = 'addEventListener' in document
+    // (Borrowed from requirejs) IE (at least 6-8) do not dispatches
+    // `'load'` events on script elements after its' execution, instead
+    // `'onreadystatechange'` events are dispatched in the script execution
+    // order.
+    , interactiveMode = !hasStandardEvents
+    , addEventListener = document.addEventListener
+    , removeEventListener = document.removeEventListener
+    , EVENT_TYPES = { load: hasStandardEvents ? 'load' : 'onreadystatechange' }
+    , interactiveScript
+
     , isBrowser = UNDEFINED !== typeof window && window.window === window
     , hasNewJS = isBrowser && 0 <= navigator.userAgent.indexOf('Firefox')
     , isWorker = !isBrowser && UNDEFINED !== typeof importScripts
@@ -42,6 +53,29 @@ var teleport = new function Teleport(global, undefined) {
 
   isArray = Array.isArray || function isArray(value) {
     return '[object Array]' === _toString.call(value)
+  }
+
+  function getInteractiveScript() {
+    var scripts = document.getElementsByTagName('script'), l = scripts.length
+      , interactiveScript, script
+
+    while (script = scripts[--l]) {
+      if ('interactive' === script.readyState) {
+        interactiveScript = script
+        break
+      }
+    }
+    return interactiveScript
+  }
+
+  function addListener(element, type, listener, captured) {
+    if (!addEventListener)
+      addEventListener.call(element, type, listener, !!captured)
+  }
+
+  function removeListener(element, type, listener, captured) {
+    if (!removeEventListener)
+      removeEventListener.call(element, type, listener, !!captured)
   }
 
   function declareDependency(dependent, dependency) {
@@ -170,23 +204,39 @@ var teleport = new function Teleport(global, undefined) {
       // been provided and we need to figure them out by source analyses.
       if (!isArray(dependencies)) {
         factory = dependencies
-        dependencies = getDependencies(factory, id)
+        dependencies = getDependencies(id, factory)
       }
       descriptor.dependencies = dependencies
       descriptor.factory = factory
-
+      // Registering this module.
       onDefine(descriptor)
     // If `id` is an array then it's an anonymous module with known
     // dependencies.
-    } else if (isArray(id))
-      // Deferring module registration, to a moment when event listener will
-      // be called so that we will be able to figure out module id.
-      anonymousModules.push({ dependencies: id, factory: dependencies })
-    // If `id` is neither `array` nor `string` then it's factory function
-    // of anonymous module.
-      else
-      // Deferring module registration.
-      anonymousModules.push({ factory: id })
+    } else {
+      // Normalizing passed arguments.
+      if (isArray(id)) {
+        // If first argument is array we shift arguments to the left.
+        factory = dependencies
+        dependencies = id
+        id = undefined
+      } else {
+        // If arguments is not an array then it's a factory function so we
+        // shift arguments to the left twice.
+        factory = id
+        dependencies = id = undefined
+      }
+      // If it's an interactive mode we are able to detect module ID by finding
+      // an interactive scripts `data-id` attribute. In this case we do so and
+      // call `define` with an id.
+      if (interactiveMode) {
+        define(getInteractiveScript().getAttribute('data-id')
+               , dependencies || factory, factory)
+      // If it's not an interactive mode we defer module factory execution and
+      // dependency analysis, so that it will before scripts `load` event in
+      // order to detect id.
+      } else
+        anonymousModules.push({ dependencies: dependencies, factory: factory })
+    }
   }
   exports.define = define
 
@@ -242,8 +292,10 @@ var teleport = new function Teleport(global, undefined) {
   }
 
   function onModuleLoad(event) {
-    var id = (event.currentTarget || event.srcElement).getAttribute('data-id')
+    var element = event.currentTarget || event.srcElement
+    var id = element.getAttribute('data-id')
     var deferred = anonymousModules.pop()
+    element.removeEventListener('load', onModuleLoad, false)
     define(id, deferred.dependencies || deferred.factory, deferred.factory)
   }
 
@@ -254,7 +306,9 @@ var teleport = new function Teleport(global, undefined) {
     module.setAttribute('data-id', descriptor.id)
     module.setAttribute('src', descriptor.url)
     module.setAttribute('charset', 'utf-8')
-    module.addEventListener('load', onModuleLoad, true)
+    module.setAttribute('async', true)
+    if (module.addEventListener)
+      module.addEventListener('load', onModuleLoad, false)
     document.getElementsByTagName('head')[0].appendChild(module)
   }
 
