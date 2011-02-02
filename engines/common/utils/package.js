@@ -14,6 +14,7 @@ function DescriptorTemplate() {
     name: '{{name}}',
     version: '{{version}}',
     description: '{{description}}',
+    format: 'raw',
     keywords: [],
     // files: null,
     // bin: null,

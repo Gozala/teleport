@@ -19,6 +19,7 @@ exports.PackageModules = Trait(
 , dependencies: Trait.required
 , name: Trait.required
 , descriptor: Trait.required
+, isAMDFormat: Trait.required
 , getModuleTransport: function getModuleTransport(id) {
     var errorSource = MODULE_NOT_FOUND_ERROR
                       .replace('{{id}}', id)
@@ -26,7 +27,7 @@ exports.PackageModules = Trait(
 
     return when
     ( this.getModuleSource(id)
-    , wrapInTransport.bind(null, id)
+    , this.isAMDFormat ? null : wrapInTransport.bind(null, id)
     , wrapInTransport.bind(null, id, errorSource)
     )
   }

@@ -75,6 +75,9 @@ var PackageTrait = Trait
       return fs.join(this.path, this.descriptor.overlay.teleport.directories.lib)
     }
   , get name() { return this.descriptor.overlay.teleport.name }
+  , get isAMDFormat() {
+      return 'amd' === this.descriptor.overlay.teleport.format.toLowerCase()
+    }
   , get dependencies() {
       var value
         , dependencies
