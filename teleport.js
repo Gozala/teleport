@@ -292,11 +292,17 @@ var teleport = new function Teleport(global, undefined) {
   }
 
   function onModuleLoad(event) {
-    var element = event.currentTarget || event.srcElement
-    var id = element.getAttribute('data-id')
-    var deferred = anonymousModules.pop()
+    var deferred, element, id
+    element = event.currentTarget || event.srcElement
     element.removeEventListener('load', onModuleLoad, false)
-    define(id, deferred.dependencies || deferred.factory, deferred.factory)
+    id = element.getAttribute('data-id')
+    // Define deferred module only if it has not been defined yet. In some
+    // cases modules with explicit id's can be used in mix with anonymous
+    // modules and we should only handle anonymous ones.
+    if (!ModuleDescriptor(id).defined) {
+      ;(deferred = anonymousModules.pop()).unshift(id)
+      define.apply(null, deferred)
+    }
   }
 
   function fetch(descriptor) {
