@@ -1,5 +1,10 @@
 # Change Log #
 
+## 0.2.9 ##
+
+- Added support for anonymous module definitions.
+- Made teleport-dashboard compatible with IE.
+
 ## 0.2.8 ##
 
 - Added a workaround to avoid npm's does confusion from a teleport's package
