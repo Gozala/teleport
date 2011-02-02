@@ -213,29 +213,18 @@ var teleport = new function Teleport(global, undefined) {
     // If `id` is an array then it's an anonymous module with known
     // dependencies.
     } else {
-      // Normalizing passed arguments.
-      if (isArray(id)) {
-        // If first argument is array we shift arguments to the left.
-        factory = dependencies
-        dependencies = id
-        id = undefined
-      } else {
-        // If arguments is not an array then it's a factory function so we
-        // shift arguments to the left twice.
-        factory = id
-        dependencies = id = undefined
-      }
+      // Shifting arguments as we know id is missing.
+      factory = dependencies
+      dependencies = id
       // If it's an interactive mode we are able to detect module ID by finding
       // an interactive scripts `data-id` attribute. In this case we do so and
       // call `define` with an id.
       if (interactiveMode) {
-        define(getInteractiveScript().getAttribute('data-id')
-               , dependencies || factory, factory)
-      // If it's not an interactive mode we defer module factory execution and
-      // dependency analysis, so that it will before scripts `load` event in
-      // order to detect id.
-      } else
-        anonymousModules.push({ dependencies: dependencies, factory: factory })
+        id = getInteractiveScript().getAttribute('data-id')
+        define(id, dependencies, factory)
+      // If it's not an interactive mode we defer module definition until
+      // associated script's `load` event in order to detect module id.
+      } else anonymousModules.push([ dependencies, factory ])
     }
   }
   exports.define = define
