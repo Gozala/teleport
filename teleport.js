@@ -17,17 +17,11 @@ var teleport = new function Teleport(global, undefined) {
     , UNDEFINED = 'undefined'
     , SCRIPT_TYPE = 'text/javascript'
     , BASE = getBase()
-
-    , hasStandardEvents = 'addEventListener' in document
-    // (Borrowed from requirejs) IE (at least 6-8) do not dispatches
-    // `'load'` events on script elements after its' execution, instead
-    // `'onreadystatechange'` events are dispatched in the script execution
-    // order.
-    , interactiveMode = !hasStandardEvents
-    , addEventListener = document.addEventListener
-    , removeEventListener = document.removeEventListener
-    , EVENT_TYPES = { load: hasStandardEvents ? 'load' : 'onreadystatechange' }
-    , interactiveScript
+    // IE (at least 6-8) do not dispatches `'load'` events on script elements
+    // after execution, but `readyState` property value of such script elements
+    // is `'interactive'`, which we default to in case `addEventListener` is
+    // not defined.
+    , interactiveMode = !('addEventListener' in document)
 
     , isBrowser = UNDEFINED !== typeof window && window.window === window
     , hasNewJS = isBrowser && 0 <= navigator.userAgent.indexOf('Firefox')
@@ -66,16 +60,6 @@ var teleport = new function Teleport(global, undefined) {
       }
     }
     return interactiveScript
-  }
-
-  function addListener(element, type, listener, captured) {
-    if (!addEventListener)
-      addEventListener.call(element, type, listener, !!captured)
-  }
-
-  function removeListener(element, type, listener, captured) {
-    if (!removeEventListener)
-      removeEventListener.call(element, type, listener, !!captured)
   }
 
   function declareDependency(dependent, dependency) {
