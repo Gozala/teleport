@@ -4,6 +4,12 @@
 
 - Added support for anonymous module definitions.
 - Made teleport-dashboard compatible with IE.
+- Adding experimental support for 'format' property in the package descriptor
+  indicating format of contained modules (amd or raw).
+- Adding files property to packages that lists all the files of the package
+  except ignored ones (ignored paths can be specified under ignore property
+  of the package descriptor).
+- Compatibility with node 0.4.0.
 
 ## 0.2.8 ##
 
