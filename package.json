@@ -16,7 +16,7 @@
   , "mime": ">=1.2.1"
   , "system": ">=0.0.6"
   , "q": ">=0.2.5"
-  , "promised-fs": ">=0.0.9"
+  , "promised-fs": ">=0.0.10"
   , "promised-utils": ">=0.0.8"
   , "core-utils": ">=0.0.2"
   , "teleport-dashboard": ">=0.0.5"
