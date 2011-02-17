@@ -24,8 +24,9 @@ function DescriptorTemplate() {
       lib: './lib'
     },
     dependencies: {},
-    files: {},
-    scripts: {}
+    files: [""],
+    scripts: {},
+    ignore: [".git"]
   }
 }
 exports.DescriptorTemplate = DescriptorTemplate

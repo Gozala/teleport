@@ -75,6 +75,30 @@ var PackageTrait = Trait
       return fs.join(this.path, this.descriptor.overlay.teleport.directories.lib)
     }
   , get name() { return this.descriptor.overlay.teleport.name }
+  , get files() {
+      var descriptor, listReady, ignore, paths
+      if (!this._files) {
+        descriptor = this.descriptor.overlay.teleport
+        ignore = descriptor.ignore
+        paths = []
+        pathsPromsise = all(descriptor.files.map(function(path) {
+          path = fs.join(this.path, path)
+          return when(fs.listTree(fs.join(path)), function (entries) {
+            paths.push.apply(paths, entries)
+          }, function() {
+            paths.push(path)
+          })
+        }, this))
+        return when(pathsPromsise, function() {
+          return paths.filter(function(path) {
+            return !ignore.some(function(pattern) {
+              return 0 == fs.normal(path).indexOf(pattern)
+            })
+          })
+        })
+      }
+      return this._files
+    }
   , get isAMDFormat() {
       return 'amd' === this.descriptor.overlay.teleport.format.toLowerCase()
     }
