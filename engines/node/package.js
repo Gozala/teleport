@@ -135,7 +135,7 @@ var PackageTrait = Trait
       return flattenObject(this.descriptor)
     }
   , getContent: function getContent(relativePath) {
-      path = fs.path([this.path, relativePath])
+      var path = fs.path([this.path, relativePath])
       return path.read()
     }
   , get modules() {

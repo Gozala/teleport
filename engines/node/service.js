@@ -62,7 +62,7 @@ function stripOutDependenciesPath(path) {
 }
 function getPackageName(path) {
   path = stripOutDependenciesPath(String(path))
-  parts = path.split('/')
+  var parts = path.split('/')
   return parts[0] || parts[1]
 }
 
