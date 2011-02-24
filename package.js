@@ -76,20 +76,21 @@ var PackageTrait = Trait
     }
   , get name() { return this.descriptor.overlay.teleport.name }
   , get files() {
-      var descriptor, listReady, ignore, paths
+      var descriptor, listReady, ignore, paths, pathsPromise
       if (!this._files) {
         descriptor = this.descriptor.overlay.teleport
         ignore = descriptor.ignore
         paths = []
-        pathsPromsise = all(descriptor.files.map(function(path) {
+        pathsPromise = all(descriptor.files.map(function(path) {
           path = fs.join(this.path, path)
           return when(fs.listTree(fs.join(path)), function (entries) {
             paths.push.apply(paths, entries)
+            return paths
           }, function() {
             paths.push(path)
           })
         }, this))
-        return when(pathsPromsise, function() {
+        return when(pathsPromise, function() {
           return paths.filter(function(path) {
             return !ignore.some(function(pattern) {
               return 0 == fs.normal(path).indexOf(pattern)
