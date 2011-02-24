@@ -23,14 +23,20 @@
     "core-utils": ">=0.0.4",
     "teleport-dashboard": ">=0.0.5"
   },
-  "bin" : { "teleport" : "./bin/teleport.js" },
+  "bin": { "teleport" : "./bin/teleport.js" },
   "scripts": { "test": "node test/all.js" },
   "engines": {
     "node": ">=0.1.103",
     "teleport": ">=0.2.0"
   },
+  "overlay": {
+    "teleport": {
+      "directories": { "lib": "./common" },
+      "dependencies": {}
+    }
+  },
   "licenses": [
-    { 
+    {
       "type" : "MPL 1.1/LGPL 2.1/GPL 2.0",
       "url" : "http://www.mozilla.org/MPL/"
     }
