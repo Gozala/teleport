@@ -28,7 +28,8 @@ var reflectPackage = Promised(function reflectPackage(path, name, catalog, $$) {
   var pack = catalog[name]
   var modules = pack.get('modules')
   var dependencies = pack.get('dependencies')
-  var modulesReady = writeModules(destinationPath, modules, pack)
+  var files = pack.get('files')
+  var modulesReady = writeModules(path, modules, pack)
   var dependenciesReady = reflectPackages(path, dependencies, $$)
   return all([modulesReady, dependenciesReady])
 })
@@ -52,6 +53,17 @@ var writeModules = Promised(function writeModules(path, modules, catalog) {
     console.log('Writing module: ', id, '\n  ', destinationPath)
     return Q.when(fs.makeTree(destinationDirectory), function() {
       return fs.write(destinationPath, source)
+    })
+  }))
+})
+
+var writeFiles = Promised(function writeFiles(destinationPath, files) {
+  return all(files.forEach(files).map(function (path) {
+    path = fs.join(destinationPath, path)
+    var destinationDirectory = fs.directory(path)
+    var content = fs.read(path)
+    return Q.when(fs.makeTree(destinationDirectory), function() {
+      return fs.write(path, content)
     })
   }))
 })
