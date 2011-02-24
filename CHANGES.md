@@ -1,5 +1,9 @@
 # Change Log #
 
+## 0.3.0 ##
+
+- Adding support for >= node@0.4.1 & npm>=0.3.5
+
 ## 0.2.9 ##
 
 - Added support for anonymous module definitions.
