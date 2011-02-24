@@ -5,10 +5,10 @@ var http = require('http')
 ,   fs =  require('promised-fs')
 ,   when = require('q').when
 ,   all = require('promised-utils').all
-,   Registry = require('teleport/registry').Registry
+,   Registry = require('./registry').Registry
 ,   Promised = require('promised-utils').Promised
-,   getDescriptor = require('teleport/project').getDescriptor
-,   CONST = require('teleport/strings')
+,   getDescriptor = require('./project').getDescriptor
+,   CONST = require('./strings')
 ,   parseURL = require('url').parse
 
 ,   server = http.createServer()

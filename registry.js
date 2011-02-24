@@ -3,11 +3,11 @@
 var fs =  require('promised-fs')
 ,   when = require('q').when
 ,   Trait = require('light-traits').Trait
-,   CONST = require('teleport/strings')
+,   CONST = require('./strings')
 ,   when = require('q').when
 ,   Promised = require('promised-utils').Promised
 ,   Module = require('./module').Module
-,   Package = require('teleport/package').Package
+,   Package = require('./package').Package
 
 ,   EXTENSION = CONST.EXTENSION
 ,   SEPARATOR = CONST.SEPARATOR

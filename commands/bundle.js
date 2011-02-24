@@ -3,7 +3,7 @@
 var fs = require('promised-fs')
 ,   when = require('q').when
 ,   pu = require('promised-utils'), Promised = pu.Promised, all = pu.all
-,   CONST = require('teleport/strings')
+,   CONST = require('../strings')
 
 ,   PACKAGES_DIR = CONST.PACKAGES_DIR
 ,   EXTENSION = CONST.EXTENSION

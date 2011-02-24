@@ -1,6 +1,6 @@
 'use strict'
 
-var service = require('teleport/service')
+var service = require('../service')
 
 exports.activate = function activate(path) {
   service.activate(path)

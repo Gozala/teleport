@@ -1,9 +1,9 @@
 'use strict'
 
 var fs =  require('promised-fs')
-  , packageUtils = require('teleport/utils/package')
+  , packageUtils = require('./common/utils/package')
   , Trait = require('light-traits').Trait
-  , CONST = require('teleport/strings')
+  , CONST = require('./strings')
   , Q = require('q'), when = Q.when, reject = Q.reject
   , pu = require('promised-utils'), Promised = pu.Promised, all = pu.all
   , PackageModules = require('./module').PackageModules

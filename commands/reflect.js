@@ -3,7 +3,7 @@
 var Q = require("q")
 var pu = require("promised-utils"), Promised = pu.Promised, all = pu.all
 var Registry = require("teleport/registry").Registry
-var moduleUtils = require("teleport/utils/module")
+var moduleUtils = require("teleport/common/utils/module")
 var projectUtils = require("teleport/project")
 var fs = require("promised-fs")
 

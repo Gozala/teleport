@@ -3,12 +3,12 @@
 var fs =  require('promised-fs')
   , when = require('q').when
   , Trait = require('light-traits').Trait
-  , M = require('teleport/utils/module'), wrapInTransport = M.wrapInTransport
+  , M = require('./common/utils/module'), wrapInTransport = M.wrapInTransport
                                  , getPackageName = M.getPackageName
                                  , getPackageRelativeId = M.getPackageRelativeId
                                  , isMainModule = M.isMainModule
                                  , isModuleIdRelative = M.isModuleIdRelative
-  , CONST = require('teleport/strings')
+  , CONST = require('./strings')
 
   , MODULE_NOT_FOUND_ERROR = CONST.MODULE_NOT_FOUND_ERROR
   , PACKAGE_NOT_FOUND_ERROR = CONST.PACKAGE_NOT_FOUND_ERROR

@@ -1,50 +1,38 @@
-{ "name": "teleport"
-, "version": "0.2.10"
-, "description": "CommonJS modules 1.0 loader for browsers."
-, "homepage": "http://github.com/Gozala/teleport/"
-, "keywords": ["commonjs", "modules", "require"]
-, "contributors":
-  [ "Irakli Gozalishvili <rfobic@gmail.com> (http://jeditoolkit.com)" ]
-, "repository":
-  { "type": "git"
-  , "url": "git://github.com/Gozala/teleport.git"
-  }
-, "bugs": { "web": "http://github.com/Gozala/teleport/issues/" }
-, "dependencies":
-  { "test": ">=0.0.11"
-  , "npm": ">=0.2.16"
-  , "mime": ">=1.2.1"
-  , "system": ">=0.0.6"
-  , "q": ">=0.2.5"
-  , "promised-fs": ">=0.0.11"
-  , "promised-utils": ">=0.0.8"
-  , "core-utils": ">=0.0.3"
-  , "teleport-dashboard": ">=0.0.5"
-  }
-, "overlay":
-  { "node":
-    { "directories":
-      { "lib": "./engines/node"
-      , "test": "./test"
-      }
-    }
-  , "teleport":
-    { "dependencies": {}
-    , "modules":
-      { "utils/module": "./engines/common/utils/module"
-      , "utils/package": "./engines/common/utils/package"
-      }
-    }
-  }
-, "bin" : { "teleport" : "./engines/node/commands/commands.js" }
-, "scripts": { "test": "node test/all.js" }
-, "engines":
-  { "node": ">=0.1.103"
-  , "teleport": ">=0.2.0"
-  }
-, "licenses" :
-  [ { "type" : "MPL 1.1/LGPL 2.1/GPL 2.0"
-    , "url" : "http://www.mozilla.org/MPL/"
+{ "name": "teleport",
+  "version": "0.3.0",
+  "description": "CommonJS modules 1.0 loader for browsers.",
+  "homepage": "http://jeditoolkit.com/teleport/",
+  "keywords": ["commonjs", "modules", "require"],
+  "contributors": [
+    "Irakli Gozalishvili <rfobic@gmail.com> (http://jeditoolkit.com)"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/Gozala/teleport.git"
+  },
+  "bugs": { "web": "http://github.com/Gozala/teleport/issues/" },
+  "directories": { "lib": "./" },
+  "dependencies": {
+    "test": ">=0.0.11",
+    "npm": ">=0.2.16",
+    "mime": ">=1.2.1",
+    "system": ">=0.0.6",
+    "q": ">=0.2.5",
+    "promised-fs": ">=0.1.0",
+    "promised-utils": ">=0.0.8",
+    "core-utils": ">=0.0.3",
+    "teleport-dashboard": ">=0.0.5"
+  },
+  "bin" : { "teleport" : "./bin/teleport.js" },
+  "scripts": { "test": "node test/all.js" },
+  "engines": {
+    "node": ">=0.1.103",
+    "teleport": ">=0.2.0"
+  },
+  "licenses": [
+    { 
+      "type" : "MPL 1.1/LGPL 2.1/GPL 2.0",
+      "url" : "http://www.mozilla.org/MPL/"
     }
   ]
 }

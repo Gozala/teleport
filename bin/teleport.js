@@ -1,8 +1,10 @@
+#!/usr/bin/env node
+
 'use strict'
 
-var activate = require('./activate').activate
-,   bundle = require('./bundle').bundle
-,   reflect = require('./reflect').reflect
+var activate = require('teleport/commands/activate').activate
+,   bundle = require('teleport/commands/bundle').bundle
+,   reflect = require('teleport/commands/reflect').reflect
 ,   args = require('system').args.splice(2)
 ,   CONST = require('teleport/strings')
 
