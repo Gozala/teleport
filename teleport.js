@@ -65,6 +65,69 @@ var teleport = new function Teleport(global, undefined) {
     }
   }
 
+  function isModuleIdRelative(id) {
+    return '.' === id.charAt(0)
+  }
+
+  function getExtension(id) {
+    var basename = id.split('/').pop(), index = basename.lastIndexOf('.')
+    return 0 < index ? basename.substr(index) : ''
+  }
+
+  /**
+   * Resolves relative module ID to an absolute id.
+   * @param {String} id
+   *    relative id to be resolved
+   * @param {String} baseId
+   *    absolute id of a requirer module
+   * @return {String}
+   *    absolute id
+   */
+  function resolveId(id, baseId) {
+    var parts, part, root, base, extension
+    // If given `id` is not relative or `baseId` is not provided we can't resolve.
+    if (!baseId || !isModuleIdRelative(id)) return id
+    extension = getExtension(baseId)
+    parts = id.split('/')
+    root = parts[0]
+    base = baseId.split('/')
+    if (base.length > 1) base.pop()
+    while ((part = parts.shift())) {
+      if (part === '..' && base.length) base.pop()
+      else if (part !== '.') base.push(part)
+    }
+    return base.join('/') + extension
+  }
+
+  function resolveURL(id) {
+    id = resolveId(id, BASE)
+    id = 0 < id.indexOf('://') ? id : 'support/' + id + '.js'
+    return id + '?module&transport'
+  }
+
+  function createModule(id) {
+    return (modules[id] = { id: id, exports: {} })
+  }
+  function getModule(id) {
+    return id in modules ? modules[id] : createModule(id)
+  }
+
+  function createDescriptor(id) {
+    return (descriptors[id] = {
+      ready: false,
+      loading: false,
+      defined: false,
+      factory: null,
+      id: id,
+      url: resolveURL(id),
+      dependencies: null,
+      dependents: null
+    })
+  }
+  function getDescriptor(id) {
+    return id in descriptors ? descriptors[id] : createDescriptor(id)
+  }
+
   function declareDependency(dependent, dependency) {
     var dependents = dependency.dependents || (dependency.dependents = {})
     return (dependents[dependent.id] = dependent)
@@ -92,12 +155,67 @@ var teleport = new function Teleport(global, undefined) {
     return dependencies
   }
 
+  function fetch(descriptor) {
+    var module = document.createElement(SCRIPT_ELEMENT)
+    module.setAttribute('type', SCRIPT_TYPE)
+    module.setAttribute('data-loader', 'teleport')
+    module.setAttribute('data-id', descriptor.id)
+    module.setAttribute('src', descriptor.url)
+    module.setAttribute('charset', 'utf-8')
+    module.setAttribute('async', true)
+    if (module.addEventListener)
+      module.addEventListener('load', onModuleLoad, false)
+    document.getElementsByTagName('head')[0].appendChild(module)
+  }
+
+  // Loads module and all it's dependencies. Once module with all the
+  // dependencies is loaded callback is called.
+  function load(descriptor) {
+    if (!descriptor.loading) {
+      descriptor.loading = true
+      fetch(descriptor)
+    }
+  }
+
+  function onModuleLoad(event) {
+    var deferred, element, id
+    element = event.currentTarget || event.srcElement
+    element.removeEventListener('load', onModuleLoad, false)
+    id = element.getAttribute('data-id')
+    // Define deferred module only if it has not been defined yet. In some
+    // cases modules with explicit id's can be used in mix with anonymous
+    // modules and we should only handle anonymous ones.
+    if (!getDescriptor(id).defined) {
+      ;(deferred = anonymousModules.pop()).unshift(id)
+      define.apply(null, deferred)
+    }
+  }
+
+  function onReady(descriptor) {
+    descriptor.ready = true
+    updateDependents(descriptor)
+    if (descriptor.execute) Require()(descriptor.id)
+  }
+
+  function moduleStateChange(descriptor) {
+   if (!descriptor.ready &&
+       descriptor.defined &&
+       0 === updateDependencyStates(descriptor, descriptor.dependencies)
+      ) onReady(descriptor)
+  }
+
+  function onDefine(descriptor) {
+    // If descriptor was not ready yet.
+    descriptor.defined = true
+    moduleStateChange(descriptor)
+  }
+
   function updateDependencyStates(descriptor, dependencies) {
     var dependency, i, ii, pending = 0
     if (dependencies) {
       for (i = 0, ii = dependencies.length; i < ii; i++) {
         // Getting module descriptor for each dependency.
-        dependency = ModuleDescriptor(dependencies[i])
+        dependency = getDescriptor(dependencies[i])
         if (!dependency.ready) {
           pending ++
           // Adding `descriptor` to a list of dependent modules on `dependency`.
@@ -111,13 +229,6 @@ var teleport = new function Teleport(global, undefined) {
     return pending
   }
 
-  function moduleStateChange(descriptor) {
-   if (!descriptor.ready &&
-       descriptor.defined &&
-       0 === updateDependencyStates(descriptor, descriptor.dependencies)
-      ) onReady(descriptor)
-  }
-
   // Notifies all the dependents that dependency is ready.
   function updateDependents(descriptor) {
     var dependency, name, dependents = descriptor.dependents;
@@ -127,36 +238,6 @@ var teleport = new function Teleport(global, undefined) {
       // Go through each dependent and check.
       for (name in dependents) moduleStateChange(dependents[name])
     }
-  }
-
-  function onDefine(descriptor) {
-    // If descriptor was not ready yet.
-    descriptor.defined = true
-    moduleStateChange(descriptor)
-  }
-
-  function onReady(descriptor) {
-    descriptor.ready = true
-    updateDependents(descriptor)
-    if (descriptor.execute) Require()(descriptor.id)
-  }
-
-  function ModuleDescriptor(id) {
-    var descriptor
-    if (id in descriptors) descriptor = descriptors[id]
-    else {
-      descriptor = descriptors[id] = {
-        ready: false,
-        loading: false,
-        defined: false,
-        factory: null,
-        id: id,
-        url: resolveURL(id),
-        dependencies: null,
-        dependents: null
-      }
-    }
-    return descriptor
   }
 
   function getMainId() {
@@ -182,7 +263,7 @@ var teleport = new function Teleport(global, undefined) {
     // we register module immediately
     if (isString(id)) {
       // Creating module descriptor for this id.
-      descriptor = ModuleDescriptor(id)
+      descriptor = getDescriptor(id)
       // If second argument is not an array then module dependencies have not
       // been provided and we need to figure them out by source analyses.
       if (!isArray(dependencies)) {
@@ -212,86 +293,7 @@ var teleport = new function Teleport(global, undefined) {
   }
   exports.define = define
 
-  /**
-   * Resolves relative module ID to an absolute id.
-   * @param {String} id
-   *    relative id to be resolved
-   * @param {String} baseId
-   *    absolute id of a requirer module
-   * @return {String}
-   *    absolute id
-   */
-  function resolveId(id, baseId) {
-    var parts, part, root, base, extension
-    // If given `id` is not relative or `baseId` is not provided we can't resolve.
-    if (!baseId || !isModuleIdRelative(id)) return id
-    extension = getExtension(baseId)
-    parts = id.split('/')
-    root = parts[0]
-    base = baseId.split('/')
-    if (base.length > 1) base.pop()
-    while ((part = parts.shift())) {
-      if (part === '..' && base.length) base.pop()
-      else if (part !== '.') base.push(part)
-    }
-    return base.join('/') + extension
-  }
-
-  function isModuleIdRelative(id) {
-    return '.' === id.charAt(0)
-  }
-
-  function getExtension(id) {
-    var basename = id.split('/').pop(), index = basename.lastIndexOf('.')
-    return 0 < index ? basename.substr(index) : ''
-  }
-
-  function resolveURL(id) {
-    id = resolveId(id, BASE)
-    id = 0 < id.indexOf('://') ? id : 'support/' + id + '.js'
-    return id + '?module&transport'
-  }
-
-  // Loads module and all it's dependencies. Once module with all the
-  // dependencies is loaded callback is called.
-  function load(descriptor) {
-    if (!descriptor.loading) {
-      descriptor.loading = true
-      fetch(descriptor)
-    }
-  }
-
-  function onModuleLoad(event) {
-    var deferred, element, id
-    element = event.currentTarget || event.srcElement
-    element.removeEventListener('load', onModuleLoad, false)
-    id = element.getAttribute('data-id')
-    // Define deferred module only if it has not been defined yet. In some
-    // cases modules with explicit id's can be used in mix with anonymous
-    // modules and we should only handle anonymous ones.
-    if (!ModuleDescriptor(id).defined) {
-      ;(deferred = anonymousModules.pop()).unshift(id)
-      define.apply(null, deferred)
-    }
-  }
-
-  function fetch(descriptor) {
-    var module = document.createElement(SCRIPT_ELEMENT)
-    module.setAttribute('type', SCRIPT_TYPE)
-    module.setAttribute('data-loader', 'teleport')
-    module.setAttribute('data-id', descriptor.id)
-    module.setAttribute('src', descriptor.url)
-    module.setAttribute('charset', 'utf-8')
-    module.setAttribute('async', true)
-    if (module.addEventListener)
-      module.addEventListener('load', onModuleLoad, false)
-    document.getElementsByTagName('head')[0].appendChild(module)
-  }
-
-  function Module(id) {
-    return modules[id] || (modules[id] = { id: id, exports: {} })
-  }
-
+  
   // `require` generator fun modules.
   function Require(requirerID) {
     function require(id) {
@@ -300,9 +302,9 @@ var teleport = new function Teleport(global, undefined) {
       id = resolveId(id, requirerID)
       // using module if it was already created, otherwise creating one
       // and registering into global module registry.
-      module = Module(id)
+      module = getModule(id)
       if (!module.filename) {
-        descriptor = ModuleDescriptor(id)
+        descriptor = getDescriptor(id)
         module.filename = descriptor.url
         descriptor.factory.call(NaN, Require(id), module.exports, module)
       }
@@ -314,13 +316,13 @@ var teleport = new function Teleport(global, undefined) {
 
   function main(id) {
     // setting main in order to reuse it later
-    Require.main = Module(id)
+    Require.main = getModule(id)
     return require(id)
   }
   exports.main = main
 
   function require(id) {
-    var module = Module(id), descriptor = ModuleDescriptor(id)
+    var module = getModule(id), descriptor = getDescriptor(id)
 
     descriptor.execute = true
     load(descriptor)
@@ -332,5 +334,5 @@ var teleport = new function Teleport(global, undefined) {
   if (!('require' in global)) global.require = require
   if (!('define' in global)) global.define = define
 
-  if (mainId = getMainId()) require.main(mainId)
+  if ((mainId = getMainId())) require.main(mainId)
 }(this)
