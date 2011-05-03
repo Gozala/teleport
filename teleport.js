@@ -1,33 +1,38 @@
-/* vim:et:ts=2:sw=2:sts=2
- * CommonJS Modules 1.1 loader.
- */
+/* vim:set ts=2 sw=2 sts=2 expandtab */
+/*jshint asi: true undef: true es5: true node: true devel: true browser: true
+         forin: true, eqnull: true latedef: false supernew: true */
+/*global define: true */
+
+// CommonJS AMD 1.1 loader.
 var teleport = new function Teleport(global, undefined) {
-  'use strict'
 
-  var exports = this
-    , mainId
-    , descriptors = {}
-    , modules = {}
-    , anonymousModules = []
-    , isArray
-    , _toString = Object.prototype.toString
+  'use strict';
 
-    , MAIN_ATTR = 'data-main'
-    , SCRIPT_ELEMENT = 'script'
-    , UNDEFINED = 'undefined'
-    , SCRIPT_TYPE = 'text/javascript'
-    , BASE = getBase()
+  var exports = this,
+      mainId,
+      descriptors = {},
+      modules = {},
+      anonymousModules = [],
+      isArray,
+      _toString = Object.prototype.toString,
+
+      // Constants
+      MAIN_ATTR = 'data-main',
+      SCRIPT_ELEMENT = 'script',
+      UNDEFINED = 'undefined',
+      SCRIPT_TYPE = 'text/javascript',
+      BASE = getBase(),
     // IE (at least 6-8) do not dispatches `'load'` events on script elements
     // after execution, but `readyState` property value of such script elements
     // is `'interactive'`, which we default to in case `addEventListener` is
     // not defined.
-    , interactiveMode = !('addEventListener' in document)
+    interactiveMode = !('addEventListener' in document),
 
-    , isBrowser = UNDEFINED !== typeof window && window.window === window
-    , hasNewJS = isBrowser && 0 <= navigator.userAgent.indexOf('Firefox')
-    , isWorker = !isBrowser && UNDEFINED !== typeof importScripts
-    , COMMENTS_MATCH = /(\/\*([^*]|[\r\n]|(\*+([^*\/]|[\r\n])))*\*+\/)|((^|\n)[^\'\"\n]*\/\/[^\n]*)/g
-    , REQUIRE_MATCH = /(^|[^\w\_])require\s*\(('|")([\w\W]*?)('|")\)/g
+    isBrowser = UNDEFINED !== typeof window && window.window === window,
+    hasNewJS = isBrowser && 0 <= navigator.userAgent.indexOf('Firefox'),
+    isWorker = !isBrowser && UNDEFINED !== typeof importScripts,
+    COMMENTS_MATCH = /(\/\*([^*]|[\r\n]|(\*+([^*\/]|[\r\n])))*\*+\/)|((^|\n)[^\'\"\n]*\/\/[^\n]*)/g,
+    REQUIRE_MATCH = /(^|[^\w\_])require\s*\(('|")([\w\W]*?)('|")\)/g
 
 
     if (hasNewJS) SCRIPT_TYPE = 'application/javascript;version=1.8'
@@ -50,21 +55,19 @@ var teleport = new function Teleport(global, undefined) {
   }
 
   function getInteractiveScript() {
-    var scripts = document.getElementsByTagName('script'), l = scripts.length
-      , interactiveScript, script
+    var scripts = document.getElementsByTagName('script'),
+        l = scripts.length,
+        interactiveScript, script
 
-    while (script = scripts[--l]) {
-      if ('interactive' === script.readyState) {
-        interactiveScript = script
-        break
-      }
+    while ((script = scripts[--l])) {
+      if ('interactive' === script.readyState)
+        return (interactiveScript = script)
     }
-    return interactiveScript
   }
 
   function declareDependency(dependent, dependency) {
-    ;(dependency.dependents || (dependency.dependents = {}))[dependent.id] =
-      dependent
+    var dependents = dependency.dependents || (dependency.dependents = {})
+    return (dependents[dependent.id] = dependent)
   }
 
   /**
@@ -79,11 +82,10 @@ var teleport = new function Teleport(global, undefined) {
    * @returns {String[]}
    */
   function getDependencies(id, source) {
-    var dependencies = []
-      , dependency
+    var dependency, dependencies = []
     // strip out comments to ignore commented `require` calls.
     source = String(source).replace(COMMENTS_MATCH, '')
-    while (dependency = REQUIRE_MATCH.exec(source)) {
+    while ((dependency = REQUIRE_MATCH.exec(source))) {
       dependency = dependency[3]
       dependencies.push(resolveId(dependency, id))
     }
@@ -97,7 +99,7 @@ var teleport = new function Teleport(global, undefined) {
         // Getting module descriptor for each dependency.
         dependency = ModuleDescriptor(dependencies[i])
         if (!dependency.ready) {
-          ++ pending
+          pending ++
           // Adding `descriptor` to a list of dependent modules on `dependency`.
           declareDependency(descriptor, dependency)
           // Start loading if not in progress already.
@@ -118,9 +120,7 @@ var teleport = new function Teleport(global, undefined) {
 
   // Notifies all the dependents that dependency is ready.
   function updateDependents(descriptor) {
-    var dependency
-      , name
-      , dependents = descriptor.dependents
+    var dependency, name, dependents = descriptor.dependents;
 
     delete descriptor.dependents
     if (dependents) {
@@ -145,15 +145,15 @@ var teleport = new function Teleport(global, undefined) {
     var descriptor
     if (id in descriptors) descriptor = descriptors[id]
     else {
-      descriptor = descriptors[id] =
-      { ready: false
-      , loading: false
-      , defined: false
-      , factory: null
-      , id: id
-      , url: resolveURL(id)
-      , dependencies: null
-      , dependents: null
+      descriptor = descriptors[id] = {
+        ready: false,
+        loading: false,
+        defined: false,
+        factory: null,
+        id: id,
+        url: resolveURL(id),
+        dependencies: null,
+        dependents: null
       }
     }
     return descriptor
@@ -162,8 +162,7 @@ var teleport = new function Teleport(global, undefined) {
   function getMainId() {
     var i, ii, main, elements = document.getElementsByTagName(SCRIPT_ELEMENT)
     for (i = 0, ii = elements.length; i < ii; i++)
-      if (main = elements[i].getAttribute(MAIN_ATTR)) break
-    return main
+      if ((main = elements[i].getAttribute(MAIN_ATTR))) return main
   }
   /**
    * Implementation of CommonJS
@@ -231,10 +230,9 @@ var teleport = new function Teleport(global, undefined) {
     root = parts[0]
     base = baseId.split('/')
     if (base.length > 1) base.pop()
-    while (part = parts.shift()) {
-      if (part == '.') continue
-      if (part == '..' && base.length) base.pop()
-      else base.push(part)
+    while ((part = parts.shift())) {
+      if (part === '..' && base.length) base.pop()
+      else if (part !== '.') base.push(part)
     }
     return base.join('/') + extension
   }
@@ -244,8 +242,7 @@ var teleport = new function Teleport(global, undefined) {
   }
 
   function getExtension(id) {
-    var basename = id.split('/').pop()
-      , index = basename.lastIndexOf('.')
+    var basename = id.split('/').pop(), index = basename.lastIndexOf('.')
     return 0 < index ? basename.substr(index) : ''
   }
 
@@ -303,7 +300,7 @@ var teleport = new function Teleport(global, undefined) {
       id = resolveId(id, requirerID)
       // using module if it was already created, otherwise creating one
       // and registering into global module registry.
-      var module = Module(id)
+      module = Module(id)
       if (!module.filename) {
         descriptor = ModuleDescriptor(id)
         module.filename = descriptor.url
@@ -323,8 +320,7 @@ var teleport = new function Teleport(global, undefined) {
   exports.main = main
 
   function require(id) {
-    var module = Module(id)
-      , descriptor = ModuleDescriptor(id)
+    var module = Module(id), descriptor = ModuleDescriptor(id)
 
     descriptor.execute = true
     load(descriptor)
