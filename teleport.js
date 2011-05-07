@@ -140,19 +140,24 @@
     else if (this.failure) return failure && failure(this.failure)
     else this.observers.push([ success, failure ])
 
-    if (!this.isLoading) this.plugin.load(this)
+    if (!this.isLoading) (this.plugin.load || module.exports.load)(this)
     this.isLoading = true
   }
   Module.prototype.compile = function compile() {
     if (this.plugin && this.plugin.compile)
       this.plugin.compile(this)
+    else if (this.plugin && this.plugin.evaluate)
+      this.plugin.evaluate(this)
     else
-      // TODO: Fix this hack
-      Loader.prototype.evaluate(this)
+      this.execute()
   }
   Module.prototype.evaluate = function evaluate() {
     if (this.plugin.evaluate)
       this.plugin.evaluate(this)
+  }
+  Module.prototype.execute = function execute() {
+    this.factory.call(NaN, Require(this.id), this.meta.exports, this.meta, undefined)
+    this.resolve()
   }
   Module.prototype.reject = function reject(error) {
     this.failure = error
@@ -175,14 +180,13 @@
    * Returns plugin for the given module id.
    */
   function Plugin(name, success, failure) {
-    if (!name || name === module.id)
-      return success(teleport)
+    name = name || module.id
     // If we already cached plugin with this name then we return it.
     if (name in plugins)
       return success(plugins[name])
     // Finally if module for this plugin has not been required yet, we require
     // it and then create a loader out of it.
-    teleport.require(name, function onRequire(plugin) {
+    require(name, function onRequire(plugin) {
       success(plugins[name] = plugin);
     }, failure);
   }
@@ -204,74 +208,69 @@
     }
   }
 
-  function Loader(options) {
-    var loader = this;
-
-    /**
-     * Implementation of CommonJS
-     * [Modules/Transport/D](http://wiki.commonjs.org/wiki/Modules/Transport/D)
-     * @param {Object} descriptors
-     *    Hash of module top level module id's and relevant factories.
-     *
-     * @param {String[]} dependencies
-     *    Top-level module identifiers corresponding to the shallow
-     *    dependencies of the given module factory.
-     * @param {Object} extra
-     *    **Non-standard** helper utilities (improving debugging)
-     */
-    loader.define = function define(id, dependencies, factory) {
-      var module, name, uri
-      if (isString(id)) {
-        if (!isArray(dependencies)) {
-          factory = dependencies;
-          dependencies = getDependencies(id, dependencies);
-        }
-        name = getPluginName(id)
-        Plugin(name, function onPlugin(plugin) {
-          uri = resolve(getPluginUri(id), baseURI)
-          // We override module in case it was already requested.
-          module = Module({
-            // Module `id` is original `uri` with plugin prefix and resolved uri
-            // suffix. Required module exports are cached using this `id`.
-            id: name ? name + '!' + uri : uri,
-            // Required `uri` is resolved with to the `base` to get an absolute
-            // `uri`.
-            uri: plugin.normalize ? plugin.normalize(uri) : uri,
-            name: name,
-            plugin: plugin
-          });
-          module.factory = factory;
-          module.dependencies = dependencies;
-          module.compile();
-        })
-      } else {
-        // Shifting arguments since `uri` is missing.
+  /**
+   * Implementation of CommonJS
+   * [Modules/Transport/D](http://wiki.commonjs.org/wiki/Modules/Transport/D)
+   * @param {Object} descriptors
+   *    Hash of module top level module id's and relevant factories.
+   *
+   * @param {String[]} dependencies
+   *    Top-level module identifiers corresponding to the shallow
+   *    dependencies of the given module factory.
+   * @param {Object} extra
+   *    **Non-standard** helper utilities (improving debugging)
+   */
+  function define(id, dependencies, factory) {
+    var module, name, uri
+    if (isString(id)) {
+      if (!isArray(dependencies)) {
         factory = dependencies;
-        dependencies = id;
+        dependencies = getDependencies(id, dependencies);
+      }
+      name = getPluginName(id)
+      Plugin(name, function onPlugin(plugin) {
+        uri = resolve(getPluginUri(id), baseURI)
+        // We override module in case it was already requested.
+        module = Module({
+          // Module `id` is original `uri` with plugin prefix and resolved uri
+          // suffix. Required module exports are cached using this `id`.
+          id: name ? name + '!' + uri : uri,
+          // Required `uri` is resolved with to the `base` to get an absolute
+          // `uri`.
+          uri: plugin.normalize ? plugin.normalize(uri) : uri,
+          name: name,
+          plugin: plugin
+        });
+        module.factory = factory;
+        module.dependencies = dependencies;
+        module.compile();
+      })
+    } else {
+      // Shifting arguments since `uri` is missing.
+      factory = dependencies;
+      dependencies = id;
 
-        if (isInteractiveMode) {
-          // If it's an interactive mode we are able to detect module ID by
-          // finding an interactive script's `data-id` attribute. We call
-          // `define` once again, but this time with an explicit module `id`.
-          define(getId(), dependencies, factory);
-        } else {
-          // If it's not an interactive mode we need to wait for an associated
-          // script `load` event. We store `dependencies` and `factory` so that
-          // we can access them later, from the event listener.
-          anonymous.push([ dependencies, factory ]);
-        }
+      if (isInteractiveMode) {
+        // If it's an interactive mode we are able to detect module ID by
+        // finding an interactive script's `data-id` attribute. We call
+        // `define` once again, but this time with an explicit module `id`.
+        define(getId(), dependencies, factory);
+      } else {
+        // If it's not an interactive mode we need to wait for an associated
+        // script `load` event. We store `dependencies` and `factory` so that
+        // we can access them later, from the event listener.
+        anonymous.push([ dependencies, factory ]);
       }
     }
-    loader.require = loader.Require()
   }
-  Loader.prototype.Require = function Require(base) {
-    var loader = this;
+
+  function Require(base) {
     base = base || baseURI
     /**
      * detect
      */
     var require = function require(id, success, failure) {
-      var uri, name;
+      var uri, name, module;
       // If we got this far, than module is not loaded yet, so we load it via
       // module loader plugin associated with the given `uri`.
       // We define both module `exports` and `meta` data in advance which will
@@ -303,28 +302,49 @@
       }, failure);
       return exports;
     };
-    require.main = loader.main;
+    // require.main = loader.main;
     return require;
   }
-  Loader.prototype.link = function link(module) {
+
+
+  exports.define = define
+  exports.require = require = Require()
+  Module({
+    id: module.id,
+    uri: module.id,
+    name: '',
+    exports: plugins[module.id] = module.exports = {}
+  })
+
+define(module.id, [], function(require, exports, module, undefined) {
+  exports.version = '0.1.0'
+
+  exports.require = require
+  exports.define = define
+
+  exports.normalize = function normalize(uri) {
+    return uri.substr(-3) !== '.js' ? uri + '.js' : uri
+  }
+
+  exports.link = function link(module) {
     var dependencies = module.dependencies, l = dependencies.length, ll = l
 
     function next() { if (--ll === 0) module.evaluate(module.factory) }
     function reject(error) { module.reject(error) }
 
-    while (l--) this.require(dependencies[l], next, reject)
+    while (l--) require(dependencies[l], next, reject)
   }
-  Loader.prototype.normalize = function normalize(uri) {
-    return uri.substr(-3) !== '.js' ? uri + '.js' : uri
-  }
-  Loader.prototype.compile = function compile(module) {
+
+  exports.compile = function compile(module) {
     if (!module.dependencies.length) module.evaluate(module.factory)
-    else this.link(module)
+    else exports.link(module)
   }
-  Loader.prototype.evaluate = function evaluate(module) {
-    module.factory.call(NaN, this.Require(module.id), module.meta.exports, module.meta, undefined)
+
+  exports.evaluate = function evaluate(module) {
+    module.factory.call(NaN, Require(module.id), module.meta.exports, module.meta, undefined)
     module.resolve()
   }
+
   /**
    * Loads resource from the given `uri`. Once resource is loaded (in this
    * context it also means enclosed JS calls `define` and module `id` is
@@ -338,7 +358,7 @@
    *    Callback that is called with an `error` that occurred when loading
    *    `resource` form `uri`.
    */
-  Loader.prototype.load = function load(module) {
+  exports.load = function load(module) {
     var element;
     // Using standard script injection technique in order to load resource
     // from the given `uri`.
@@ -361,17 +381,9 @@
 
     document.getElementsByTagName('head')[0].appendChild(element)
   }
-
-  exports.Loader = Loader
-  var teleport = new Loader
-  exports.define = teleport.define
-  exports.require = teleport.require
-
-define('loader', [], function(require, exports, module, undefined) {
-
 })
 
-})(null, this, { id: 'teleport' }, undefined);
+})(null, this, { id: 'teleport://teleport.js' }, undefined);
 
 define('text', [], function(require, exports, module, undefined) {
   exports.version = '0.1.0'
