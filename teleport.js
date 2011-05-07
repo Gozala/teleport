@@ -4,74 +4,43 @@
 /*global define: true */
 
 // CommonJS AMD 1.1 loader.
-var teleport = new function Teleport(global, undefined) {
+(function(require, exports, module, undefined) {
+  var isInteractiveMode, isArray, isString,
 
-  'use strict';
+      COMMENTS_MATCH = /(\/\*([^*]|[\r\n]|(\*+([^*\/]|[\r\n])))*\*+\/)|((^|\n)[^\'\"\n]*\/\/[^\n]*)/g,
+      REQUIRE_MATCH = /(^|[^\w\_])require\s*\(('|")([\w\W]*?)('|")\)/g
+  
+  // IE (at least 6-8) do not dispatches `'load'` events on script elements
+  // after execution, but `readyState` property value of such script elements
+  // is `'interactive'`, which we default to in case `addEventListener` is
+  // not defined.
+  isInteractiveMode = !('addEventListener' in document)
 
-  var exports = this,
-      mainId,
-      descriptors = {},
-      modules = {},
-      anonymousModules = [],
-      isArray,
-      _toString = Object.prototype.toString,
-
-      // Constants
-      MAIN_ATTR = 'data-main',
-      SCRIPT_ELEMENT = 'script',
-      UNDEFINED = 'undefined',
-      SCRIPT_TYPE = 'text/javascript',
-      BASE = getBase(),
-    // IE (at least 6-8) do not dispatches `'load'` events on script elements
-    // after execution, but `readyState` property value of such script elements
-    // is `'interactive'`, which we default to in case `addEventListener` is
-    // not defined.
-    interactiveMode = !('addEventListener' in document),
-
-    isBrowser = UNDEFINED !== typeof window && window.window === window,
-    hasNewJS = isBrowser && 0 <= navigator.userAgent.indexOf('Firefox'),
-    isWorker = !isBrowser && UNDEFINED !== typeof importScripts,
-    COMMENTS_MATCH = /(\/\*([^*]|[\r\n]|(\*+([^*\/]|[\r\n])))*\*+\/)|((^|\n)[^\'\"\n]*\/\/[^\n]*)/g,
-    REQUIRE_MATCH = /(^|[^\w\_])require\s*\(('|")([\w\W]*?)('|")\)/g
-
-
-    if (hasNewJS) SCRIPT_TYPE = 'application/javascript;version=1.8'
-
-
-  function getBase() {
-    var base = (document.baseURI || document.URL).split('?')[0].split('#')[0]
-    if (0 < base.substr(base.lastIndexOf('/')).indexOf('.'))
-      base = base.substr(0, base.lastIndexOf('/') + 1)
-    return base
-  }
-
-
-  function isString(value) {
-    return 'string' === typeof value
-  }
-
+  isString = function isString(value) { return 'string' === typeof value }
   isArray = Array.isArray || function isArray(value) {
-    return '[object Array]' === _toString.call(value)
+    return '[object Array]' === Object.prototype.toString.call(value)
   }
 
-  function getInteractiveScript() {
-    var scripts = document.getElementsByTagName('script'),
-        l = scripts.length,
-        interactiveScript, script
+  function getId() {
+    var script, scripts = document.getElementsByTagName('script'),
+        l = scripts.length;
 
     while ((script = scripts[--l])) {
       if ('interactive' === script.readyState)
-        return (interactiveScript = script)
+        return script.getAttribute('data-id')
     }
   }
 
-  function isModuleIdRelative(id) {
-    return '.' === id.charAt(0)
+  function isRelative(uri) { return uri.charAt(0) === '.' }
+
+  function getPluginName(id) {
+    var index = id.indexOf('!')
+    return index > 0 ? id.substr(0, index) : ''
   }
 
-  function getExtension(id) {
-    var basename = id.split('/').pop(), index = basename.lastIndexOf('.')
-    return 0 < index ? basename.substr(index) : ''
+  function getPluginUri(id) {
+    var index = id.indexOf('!')
+    return ~index ? id.substr(++index) : id
   }
 
   /**
@@ -83,54 +52,20 @@ var teleport = new function Teleport(global, undefined) {
    * @return {String}
    *    absolute id
    */
-  function resolveId(id, baseId) {
-    var parts, part, root, base, extension
-    // If given `id` is not relative or `baseId` is not provided we can't resolve.
-    if (!baseId || !isModuleIdRelative(id)) return id
-    extension = getExtension(baseId)
-    parts = id.split('/')
-    root = parts[0]
-    base = baseId.split('/')
-    if (base.length > 1) base.pop()
-    while ((part = parts.shift())) {
-      if (part === '..' && base.length) base.pop()
-      else if (part !== '.') base.push(part)
+  function resolve(uri, base) {
+    var path, paths, root, extension;
+    // If given `uri` is not relative or `base` uri is not provided we do not
+    // resolve anything.
+    if (!base || !isRelative(uri)) return uri;
+    base = base.split('/');
+    paths = uri.split('/');
+    root = paths[0];
+    if (base.length > 1) base.pop();
+    while ((path = paths.shift())) {
+      if (path === '..' && base.length) base.pop();
+      else if (path !== '.') base.push(path);
     }
-    return base.join('/') + extension
-  }
-
-  function resolveURL(id) {
-    id = resolveId(id, BASE)
-    id = 0 < id.indexOf('://') ? id : 'support/' + id + '.js'
-    return id + '?module&transport'
-  }
-
-  function createModule(id) {
-    return (modules[id] = { id: id, exports: {} })
-  }
-  function getModule(id) {
-    return id in modules ? modules[id] : createModule(id)
-  }
-
-  function createDescriptor(id) {
-    return (descriptors[id] = {
-      ready: false,
-      loading: false,
-      defined: false,
-      factory: null,
-      id: id,
-      url: resolveURL(id),
-      dependencies: null,
-      dependents: null
-    })
-  }
-  function getDescriptor(id) {
-    return id in descriptors ? descriptors[id] : createDescriptor(id)
-  }
-
-  function declareDependency(dependent, dependency) {
-    var dependents = dependency.dependents || (dependency.dependents = {})
-    return (dependents[dependent.id] = dependent)
+    return base.join('/');
   }
 
   /**
@@ -144,195 +79,290 @@ var teleport = new function Teleport(global, undefined) {
    *    Source of a module.
    * @returns {String[]}
    */
-  function getDependencies(id, source) {
-    var dependency, dependencies = []
+  function getDependencies(uri, source) {
+    var dependency, dependencies = [];
     // strip out comments to ignore commented `require` calls.
     source = String(source).replace(COMMENTS_MATCH, '')
     while ((dependency = REQUIRE_MATCH.exec(source))) {
-      dependency = dependency[3]
-      dependencies.push(resolveId(dependency, id))
+      dependency = resolve(dependency[3], uri)
+      if (!~dependencies.indexOf(dependency))
+        dependencies.push(dependency)
     }
     return dependencies
   }
 
-  function fetch(descriptor) {
-    var module = document.createElement(SCRIPT_ELEMENT)
-    module.setAttribute('type', SCRIPT_TYPE)
-    module.setAttribute('data-loader', 'teleport')
-    module.setAttribute('data-id', descriptor.id)
-    module.setAttribute('src', descriptor.url)
-    module.setAttribute('charset', 'utf-8')
-    module.setAttribute('async', true)
-    if (module.addEventListener)
-      module.addEventListener('load', onModuleLoad, false)
-    document.getElementsByTagName('head')[0].appendChild(module)
+  function Module(options) {
+    var module
+    if (!options) return this
+    if (!(module = options.cache[options.id])) {
+      module = new Module
+      module.observers = options.observers || []
+      module.meta = options.meta || {}
+      module.id = module.meta.id = options.id
+      module.uri = module.meta.uri = options.uri
+      module.meta.exports = options.exports || {}
+      module.plugin = options.plugin
+      module = options.cache[module.id] = module
+    }
+    return module;
   }
-
-  // Loads module and all it's dependencies. Once module with all the
-  // dependencies is loaded callback is called.
-  function load(descriptor) {
-    if (!descriptor.loading) {
-      descriptor.loading = true
-      fetch(descriptor)
+  Module.prototype.isLoaded = false;
+  Module.prototype.isLoading = false;
+  Module.prototype.falure = null;
+  Module.prototype.load = function load(success, failure) {
+    if (this.isLoaded) return success && success(this.meta.exports)
+    else if (this.failure) return failure && failure(this.failure)
+    else this.observers.push([ success, failure ])
+    
+    if (!this.isLoading) this.plugin.load(this)
+    this.isLoading = true
+  }
+  Module.prototype.compile = function compile() {
+    if (this.plugin && this.plugin.compile)
+      this.plugin.compile(this)
+    else
+      // TODO: Fix this hack
+      Loader.prototype.evaluate(this)
+  }
+  Module.prototype.evaluate = function evaluate() {
+    if (this.plugin.evaluate)
+      this.plugin.evaluate(this)
+  }
+  Module.prototype.reject = function reject(error) {
+    this.failure = error
+    this.complete()
+  }
+  Module.prototype.resolve = function resolve() {
+    this.isLoaded = true
+    this.complete()
+  }
+  Module.prototype.complete = function complete() {
+    var observer, observers = this.observers
+    this.observer = this.plugins = null
+    while ((observer = observers.shift())) {
+      if ((observer = observer[this.isLoaded ? 0 : 1]))
+        observer(this.isLoaded ? this.meta.exports : this.error)
     }
   }
 
-  function onModuleLoad(event) {
-    var deferred, element, id
-    element = event.currentTarget || event.srcElement
-    element.removeEventListener('load', onModuleLoad, false)
-    id = element.getAttribute('data-id')
-    // Define deferred module only if it has not been defined yet. In some
-    // cases modules with explicit id's can be used in mix with anonymous
-    // modules and we should only handle anonymous ones.
-    if (!getDescriptor(id).defined) {
-      ;(deferred = anonymousModules.pop()).unshift(id)
-      define.apply(null, deferred)
+  function load(plugin, module) {
+    plugin.load(module)
+  }
+
+  function Loader(options) {
+    var loader, plugins, cache, anonymous;
+    loader = this;
+    cache = loader.cache = {};
+    plugins = loader.plugins = { };
+    anonymous = loader.anonymous = [];
+
+    loader.onInject = function onInject(event) {
+      var element, id, deferred
+      element = event.currentTarget || event.srcElement
+      element.removeEventListener('load', onInject, false)
+      id = element.getAttribute('data-id')
+      // Define deferred module only if it has not been defined yet. In some
+      // cases modules with explicit id's can be used in mix with anonymous
+      // modules and we should only handle anonymous ones.
+      if (!Module({ cache: cache, id: id }).isLoaded) {
+        deferred = anonymous.pop()
+        deferred.unshift(id)
+        define.apply(null, deferred)
+      }
     }
-  }
 
-  function onReady(descriptor) {
-    descriptor.ready = true
-    updateDependents(descriptor)
-    if (descriptor.execute) Require()(descriptor.id)
-  }
-
-  function moduleStateChange(descriptor) {
-   if (!descriptor.ready &&
-       descriptor.defined &&
-       0 === updateDependencyStates(descriptor, descriptor.dependencies)
-      ) onReady(descriptor)
-  }
-
-  function onDefine(descriptor) {
-    // If descriptor was not ready yet.
-    descriptor.defined = true
-    moduleStateChange(descriptor)
-  }
-
-  function updateDependencyStates(descriptor, dependencies) {
-    var dependency, i, ii, pending = 0
-    if (dependencies) {
-      for (i = 0, ii = dependencies.length; i < ii; i++) {
-        // Getting module descriptor for each dependency.
-        dependency = getDescriptor(dependencies[i])
-        if (!dependency.ready) {
-          pending ++
-          // Adding `descriptor` to a list of dependent modules on `dependency`.
-          declareDependency(descriptor, dependency)
-          // Start loading if not in progress already.
-          if (!dependency.loading) load(dependency)
+    /**
+     * Implementation of CommonJS
+     * [Modules/Transport/D](http://wiki.commonjs.org/wiki/Modules/Transport/D)
+     * @param {Object} descriptors
+     *    Hash of module top level module id's and relevant factories.
+     *
+     * @param {String[]} dependencies
+     *    Top-level module identifiers corresponding to the shallow
+     *    dependencies of the given module factory.
+     * @param {Object} extra
+     *    **Non-standard** helper utilities (improving debugging)
+     */
+    loader.define = function define(id, dependencies, factory) {
+      var module;
+      if (isString(id)) {
+        if (!isArray(dependencies)) {
+          factory = dependencies;
+          dependencies = getDependencies(id, dependencies);
+        }
+        module = Module({ id: id, cache: cache, plugin: loader })
+        module.factory = factory;
+        module.dependencies = dependencies;
+        module.compile();
+      } else {
+        // Shifting arguments since `uri` is missing.
+        factory = dependencies;
+        dependencies = id;
+        
+        if (isInteractiveMode) {
+          // If it's an interactive mode we are able to detect module ID by
+          // finding an interactive script's `data-id` attribute. We call
+          // `define` once again, but this time with an explicit module `id`.
+          define(getId(), dependencies, factory);
+        } else {
+          // If it's not an interactive mode we need to wait for an associated
+          // script `load` event. We store `dependencies` and `factory` so that
+          // we can access them later, from the event listener.
+          anonymous.push([ dependencies, factory ]);
         }
       }
     }
-    // Return list of pending dependencies.
-    return pending
+    loader.require = loader.Require('')
   }
-
-  // Notifies all the dependents that dependency is ready.
-  function updateDependents(descriptor) {
-    var dependency, name, dependents = descriptor.dependents;
-
-    delete descriptor.dependents
-    if (dependents) {
-      // Go through each dependent and check.
-      for (name in dependents) moduleStateChange(dependents[name])
-    }
-  }
-
-  function getMainId() {
-    var i, ii, main, elements = document.getElementsByTagName(SCRIPT_ELEMENT)
-    for (i = 0, ii = elements.length; i < ii; i++)
-      if ((main = elements[i].getAttribute(MAIN_ATTR))) return main
+  Loader.prototype.Require = function Require(base) {
+    var loader = this;
+    /**
+     * detect
+     */
+    var require = function require(id, success, failure) {
+      var uri, name;
+      // If we got this far, than module is not loaded yet, so we load it via
+      // module loader plugin associated with the given `uri`.
+      // We define both module `exports` and `meta` data in advance which will
+      // be passed to the module context once it's executed. This way we can
+      // use asynchronous `require` from the browser console without
+      // a callback which is quite common during development.
+      exports = {};
+      name = getPluginName(id)
+      id = resolve(id, base)
+      // We get (may involve loading of associated module) plugin associated
+      // with a required `uri`. `onLoader` success callback, will be called
+      // with `uri` that has plugin name stripped off and `loader` plugin.
+      loader.Plugin(name, function onPlugin(plugin) {
+        uri = getPluginUri(id)
+        // We override module in case it was already requested.
+        module = Module({
+          // Module `id` is original `uri` with plugin prefix and resolved uri
+          // suffix. Required module exports are cached using this `id`.
+          id: name ? name + '!' + uri : uri,
+          // Required `uri` is resolved with to the `base` to get an absolute
+          // `uri`.
+          uri: plugin.normalize ? plugin.normalize(uri) : uri,
+          plugin: plugin,
+          exports: exports,
+          cache: cache
+        });
+        module.load(success, failure)
+        // Override exports in case module is already being loaded
+        exports = module.meta.exports
+      }, failure);
+      return exports;
+    };
+    require.main = loader.main;
+    return require;
   }
   /**
-   * Implementation of CommonJS
-   * [Modules/Transport/D](http://wiki.commonjs.org/wiki/Modules/Transport/D)
-   * @param {Object} descriptors
-   *    Hash of module top level module id's and relevant factories.
-   *
-   * @param {String[]} dependencies
-   *    Top-level module identifiers corresponding to the shallow dependencies
-   *    of the given module factory
-   * @param {Object} extra
-   *    **Non-standard** helper utilities (improving debugging)
+   * Returns plugin for the given module id.
    */
-  function define(id, dependencies, factory) {
-    var descriptor
-    // If first argument is string then it's a module with provided `id` and
-    // we register module immediately
-    if (isString(id)) {
-      // Creating module descriptor for this id.
-      descriptor = getDescriptor(id)
-      // If second argument is not an array then module dependencies have not
-      // been provided and we need to figure them out by source analyses.
-      if (!isArray(dependencies)) {
-        factory = dependencies
-        dependencies = getDependencies(id, factory)
+  Loader.prototype.Plugin = function Plugin(name, success, failure) {
+    var plugins = this.plugins;
+    if (!name || name === module.id)
+      return success(this)
+    // If we already cached plugin with this name then we return it.
+    if (name in plugins)
+      return success(plugins[name])
+    // Finally if module for this plugin has not been required yet, we require
+    // it and then create a loader out of it.
+    this.require(name, function onRequire(plugin) {
+      success(plugins[name] = plugin);
+    }, failure);
+  }
+  Loader.prototype.normalize = function normalize(uri) {
+    return uri.substr(-3) !== '.js' ? uri + '.js' : uri
+  }
+  Loader.prototype.link = function link(module) {
+    var dependencies = module.dependencies, l = dependencies.length, ll = l
+
+    function next() { if (--ll === 0) module.evaluate(module.factory) }
+    function reject(error) { module.reject(error) }
+
+    while (l--) this.require(dependencies[l], next, reject)
+  }
+  Loader.prototype.compile = function compile(module) {
+    if (!module.dependencies.length) module.evaluate(module.factory)
+    else this.link(module)
+  }
+  Loader.prototype.evaluate = function evaluate(module) {
+    module.factory.call(NaN, this.Require(module.id), module.meta.exports, module.meta, undefined)
+    module.resolve()
+  }
+  /**
+   * Loads resource from the given `uri`. Once resource is loaded (in this
+   * context it also means enclosed JS calls `define` and module `id` is
+   * detected using some hackery) `success` callback is called. If loading
+   * fails then `failure` callback is called instead.
+   * @param {String} uri
+   *    URI of the resource to be loaded.
+   * @param {Function} success
+   *    Callback that is called with `uri` and loaded `resource` from it.
+   * @param {Function} failure
+   *    Callback that is called with an `error` that occurred when loading
+   *    `resource` form `uri`.
+   */
+  Loader.prototype.load = function load(module) {
+    var element;
+    // Using standard script injection technique in order to load resource
+    // from the given `uri`.
+    element = document.createElement('script');
+    element.setAttribute('type', 'text/javascript');
+    element.setAttribute('data-loader', 'teleport');
+    element.setAttribute('data-id', module.id);
+    element.setAttribute('src', module.uri);
+    element.setAttribute('charset', 'utf-8');
+    element.setAttribute('async', true);
+
+    // If element has `addEventListener` then it's a modern browser and
+    // "load" event will be called on script element after script is executed
+    // we use listener for that event, in order to call `define` second time
+    // with an explicit module `id` that is read form 'data-id' element.
+    if (element.addEventListener)
+      element.addEventListener('load', this.onInject, false);
+
+    document.getElementsByTagName('head')[0].appendChild(element);
+  }
+
+  exports.Loader = Loader
+  teleport = new Loader
+  exports.define = teleport.define
+  exports.require = teleport.require
+  exports.cache = teleport.cache
+
+define('loader', [], function(require, exports, module, undefined) {
+
+})
+
+})(null, this, { id: 'teleport' }, undefined);
+
+define('text', [], function(require, exports, module, undefined) {
+  exports.version = '0.1.0'
+  exports.escape = function escape(content) {
+    return content.replace(/(['\\])/g, '\\$1')
+                  .replace(/[\f]/g, "\\f")
+                  .replace(/[\b]/g, "\\b")
+                  .replace(/[\n]/g, "\\n")
+                  .replace(/[\t]/g, "\\t")
+                  .replace(/[\r]/g, "\\r")
+  }
+  exports.load = function load(module) {
+    var xhr = new XMLHttpRequest()
+    xhr.open('GET', module.uri, true)
+    xhr.onreadystatechange = function onProgress() {
+      if (xhr.readyState === 4) {
+        module.meta.exports = xhr.responseText
+        module.resolve()
       }
-      descriptor.dependencies = dependencies
-      descriptor.factory = factory
-      // Registering this module.
-      onDefine(descriptor)
-    // If `id` is an array then it's an anonymous module with known
-    // dependencies.
-    } else {
-      // Shifting arguments as we know id is missing.
-      factory = dependencies
-      dependencies = id
-      // If it's an interactive mode we are able to detect module ID by finding
-      // an interactive scripts `data-id` attribute. In this case we do so and
-      // call `define` with an id.
-      if (interactiveMode) {
-        id = getInteractiveScript().getAttribute('data-id')
-        define(id, dependencies, factory)
-      // If it's not an interactive mode we defer module definition until
-      // associated script's `load` event in order to detect module id.
-      } else anonymousModules.push([ dependencies, factory ])
     }
+    xhr.send(null)
   }
-  exports.define = define
+})
 
-  
-  // `require` generator fun modules.
-  function Require(requirerID) {
-    function require(id) {
-      var module, descriptor
-      // resolving relative id to an absolute id.
-      id = resolveId(id, requirerID)
-      // using module if it was already created, otherwise creating one
-      // and registering into global module registry.
-      module = getModule(id)
-      if (!module.filename) {
-        descriptor = getDescriptor(id)
-        module.filename = descriptor.url
-        descriptor.factory.call(NaN, Require(id), module.exports, module)
-      }
-      return module.exports
-    }
-    require.main = Require.main
-    return require
+define('http', [], function(require, exports, module, undefined) {
+  exports.normalize = function normalize(uri) {
+    return "http://" + uri
   }
-
-  function main(id) {
-    // setting main in order to reuse it later
-    Require.main = getModule(id)
-    return require(id)
-  }
-  exports.main = main
-
-  function require(id) {
-    var module = getModule(id), descriptor = getDescriptor(id)
-
-    descriptor.execute = true
-    load(descriptor)
-    return module.exports
-  }
-  require.main = main
-  exports.require = require
-
-  if (!('require' in global)) global.require = require
-  if (!('define' in global)) global.define = define
-
-  if ((mainId = getMainId())) require.main(mainId)
-}(this)
+})
