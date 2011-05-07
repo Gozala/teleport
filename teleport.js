@@ -5,7 +5,7 @@
 
 // CommonJS AMD 1.1 loader.
 (function(require, exports, module, undefined) {
-  var isInteractiveMode, isArray, isString,
+  var isInteractiveMode, isArray, isString, baseURI,
 
       COMMENTS_MATCH = /(\/\*([^*]|[\r\n]|(\*+([^*\/]|[\r\n])))*\*+\/)|((^|\n)[^\'\"\n]*\/\/[^\n]*)/g,
       REQUIRE_MATCH = /(^|[^\w\_])require\s*\(('|")([\w\W]*?)('|")\)/g
@@ -31,7 +31,20 @@
     }
   }
 
-  function isRelative(uri) { return uri.charAt(0) === '.' }
+  function isAbsolute(uri) { return ~uri.indexOf('://') }
+
+  function getBaseURI() {
+    var index, uri;
+    uri = document.baseURI || document.URL
+    // Stripping out search / query arguments
+    if (~(index = uri.indexOf('?'))) uri = uri.substr(0, index)
+    // Stripping out hash data
+    if (~(index = uri.indexOf('#'))) uri = uri.substr(0, index)
+    // Stripping out trailing `/`
+    // if ('/' === uri.charAt(index = uri.length - 1)) uri = uri.substr(0, index)
+    return uri
+  }
+  baseURI = getBaseURI()
 
   function getPluginName(id) {
     var index = id.indexOf('!')
@@ -53,19 +66,17 @@
    *    absolute id
    */
   function resolve(uri, base) {
-    var path, paths, root, extension;
-    // If given `uri` is not relative or `base` uri is not provided we do not
-    // resolve anything.
-    if (!base || !isRelative(uri)) return uri;
-    base = base.split('/');
-    paths = uri.split('/');
-    root = paths[0];
-    if (base.length > 1) base.pop();
+    var path, paths, root, extension
+    if (isAbsolute(uri)) return uri
+    base = base.split('/')
+    paths = uri.split('/')
+    root = paths[0]
+    if (base.length > 1) base.pop()
     while ((path = paths.shift())) {
-      if (path === '..' && base.length) base.pop();
-      else if (path !== '.') base.push(path);
+      if (path === '..' && base.length) base.pop()
+      else if (path !== '.') base.push(path)
     }
-    return base.join('/');
+    return base.join('/')
   }
 
   /**
@@ -100,6 +111,7 @@
       module.meta = options.meta || {}
       module.id = module.meta.id = options.id
       module.uri = module.meta.uri = options.uri
+      module.name = module.meta.plugin = options.name
       module.meta.exports = options.exports || {}
       module.plugin = options.plugin
     }
@@ -156,14 +168,16 @@
     anonymous = loader.anonymous = [];
 
     loader.onInject = function onInject(event) {
-      var element, id, deferred
+      var element, id, name, uri, deferred
       element = event.currentTarget || event.srcElement
       element.removeEventListener('load', onInject, false)
       id = element.getAttribute('data-id')
+      name = element.getAttribute('data-plugin')
+      uri = element.getAttribute('data-uri')
       // Define deferred module only if it has not been defined yet. In some
       // cases modules with explicit id's can be used in mix with anonymous
       // modules and we should only handle anonymous ones.
-      if (!Module({ cache: cache, id: id }).isLoaded) {
+      if (!Module({ cache: cache, id: id, name: name, uri: uri }).isLoaded) {
         deferred = anonymous.pop()
         deferred.unshift(id)
         define.apply(null, deferred)
@@ -191,7 +205,7 @@
         }
         name = getPluginName(id)
         loader.Plugin(name, function onPlugin(plugin) {
-          uri = getPluginUri(id)
+          uri = resolve(getPluginUri(id), baseURI)
           // We override module in case it was already requested.
           module = Module({
             // Module `id` is original `uri` with plugin prefix and resolved uri
@@ -226,10 +240,11 @@
         }
       }
     }
-    loader.require = loader.Require('')
+    loader.require = loader.Require()
   }
   Loader.prototype.Require = function Require(base) {
     var loader = this;
+    base = base || baseURI
     /**
      * detect
      */
@@ -243,12 +258,11 @@
       // a callback which is quite common during development.
       exports = {};
       name = getPluginName(id)
-      id = resolve(id, base)
       // We get (may involve loading of associated module) plugin associated
       // with a required `uri`. `onLoader` success callback, will be called
       // with `uri` that has plugin name stripped off and `loader` plugin.
       loader.Plugin(name, function onPlugin(plugin) {
-        uri = getPluginUri(id)
+        uri = resolve(getPluginUri(id), base)
         // We override module in case it was already requested.
         module = Module({
           // Module `id` is original `uri` with plugin prefix and resolved uri
@@ -323,22 +337,24 @@
     var element;
     // Using standard script injection technique in order to load resource
     // from the given `uri`.
-    element = document.createElement('script');
-    element.setAttribute('type', 'text/javascript');
-    element.setAttribute('data-loader', 'teleport');
-    element.setAttribute('data-id', module.id);
-    element.setAttribute('src', module.uri);
-    element.setAttribute('charset', 'utf-8');
-    element.setAttribute('async', true);
+    element = document.createElement('script')
+    element.setAttribute('type', 'text/javascript')
+    element.setAttribute('data-loader', 'teleport')
+    element.setAttribute('data-id', module.id)
+    element.setAttribute('data-uri', module.uri)
+    element.setAttribute('data-plugin', module.name)
+    element.setAttribute('src', module.uri)
+    element.setAttribute('charset', 'utf-8')
+    element.setAttribute('async', true)
 
     // If element has `addEventListener` then it's a modern browser and
     // "load" event will be called on script element after script is executed
     // we use listener for that event, in order to call `define` second time
     // with an explicit module `id` that is read form 'data-id' element.
     if (element.addEventListener)
-      element.addEventListener('load', this.onInject, false);
+      element.addEventListener('load', this.onInject, false)
 
-    document.getElementsByTagName('head')[0].appendChild(element);
+    document.getElementsByTagName('head')[0].appendChild(element)
   }
 
   exports.Loader = Loader
