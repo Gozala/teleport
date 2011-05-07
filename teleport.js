@@ -5,11 +5,26 @@
 
 // CommonJS AMD 1.1 loader.
 (function(require, exports, module, undefined) {
-  var isInteractiveMode, isArray, isString, baseURI,
+  var isInteractiveMode, isArray, isString, baseURI, cache, anonymous, onInject,
+      plugins,
 
       COMMENTS_MATCH = /(\/\*([^*]|[\r\n]|(\*+([^*\/]|[\r\n])))*\*+\/)|((^|\n)[^\'\"\n]*\/\/[^\n]*)/g,
       REQUIRE_MATCH = /(^|[^\w\_])require\s*\(('|")([\w\W]*?)('|")\)/g
-  
+
+  // Both successfully loaded and failed modules are cached by the unique
+  // identifier that is contains plugin `name` used to load and a resource
+  // `uri` module was loaded from. So keys of this map have a form of
+  // `text!http://foo.com/bar` for plugin loaded modules and
+  // `!http://foo.com/bar.js` for normal modules.
+  cache = exports.cache = {}
+  // Arguments passed to the `define` by an anonymous modules (modules that do
+  // not explicitly pass their id to the `define`). This arguments are used by
+  // `onAttach` function listening to the script's 'load' event.
+  anonymous = []
+  // Map of cached plugins, which is just a map of plugin names mapped to the
+  // associated modules.
+  plugins = {}
+
   // IE (at least 6-8) do not dispatches `'load'` events on script elements
   // after execution, but `readyState` property value of such script elements
   // is `'interactive'`, which we default to in case `addEventListener` is
@@ -105,8 +120,8 @@
   function Module(options) {
     var module
     if (!options) return this
-    if (!(module = options.cache[options.name + '!' + options.uri])) {
-      module = options.cache[options.name + '!' + options.uri] = new Module
+    if (!(module = cache[options.name + '!' + options.uri])) {
+      module = cache[options.name + '!' + options.uri] = new Module
       module.observers = options.observers || []
       module.meta = options.meta || {}
       module.id = module.meta.id = options.id
@@ -124,7 +139,7 @@
     if (this.isLoaded) return success && success(this.meta.exports)
     else if (this.failure) return failure && failure(this.failure)
     else this.observers.push([ success, failure ])
-    
+
     if (!this.isLoading) this.plugin.load(this)
     this.isLoading = true
   }
@@ -149,40 +164,48 @@
   }
   Module.prototype.complete = function complete() {
     var observer, observers = this.observers
-    this.observer = this.plugins = null
+    this.observer = this.plugin = null
     while ((observer = observers.shift())) {
       if ((observer = observer[this.isLoaded ? 0 : 1]))
         observer(this.isLoaded ? this.meta.exports : this.error)
     }
   }
 
-  function load(plugin, module) {
-    plugin.load(module)
+  /**
+   * Returns plugin for the given module id.
+   */
+  function Plugin(name, success, failure) {
+    if (!name || name === module.id)
+      return success(teleport)
+    // If we already cached plugin with this name then we return it.
+    if (name in plugins)
+      return success(plugins[name])
+    // Finally if module for this plugin has not been required yet, we require
+    // it and then create a loader out of it.
+    teleport.require(name, function onRequire(plugin) {
+      success(plugins[name] = plugin);
+    }, failure);
+  }
+
+  onInject = function onInject(event) {
+    var element, id, name, uri, deferred
+    element = event.currentTarget || event.srcElement
+    element.removeEventListener('load', onInject, false)
+    id = element.getAttribute('data-id')
+    name = element.getAttribute('data-plugin')
+    uri = element.getAttribute('data-uri')
+    // Define deferred module only if it has not been defined yet. In some
+    // cases modules with explicit id's can be used in mix with anonymous
+    // modules and we should only handle anonymous ones.
+    if (!Module({ id: id, name: name, uri: uri }).isLoaded) {
+      deferred = anonymous.pop()
+      deferred.unshift(id)
+      define.apply(null, deferred)
+    }
   }
 
   function Loader(options) {
-    var loader, plugins, cache, anonymous;
-    loader = this;
-    cache = loader.cache = {};
-    plugins = loader.plugins = { };
-    anonymous = loader.anonymous = [];
-
-    loader.onInject = function onInject(event) {
-      var element, id, name, uri, deferred
-      element = event.currentTarget || event.srcElement
-      element.removeEventListener('load', onInject, false)
-      id = element.getAttribute('data-id')
-      name = element.getAttribute('data-plugin')
-      uri = element.getAttribute('data-uri')
-      // Define deferred module only if it has not been defined yet. In some
-      // cases modules with explicit id's can be used in mix with anonymous
-      // modules and we should only handle anonymous ones.
-      if (!Module({ cache: cache, id: id, name: name, uri: uri }).isLoaded) {
-        deferred = anonymous.pop()
-        deferred.unshift(id)
-        define.apply(null, deferred)
-      }
-    }
+    var loader = this;
 
     /**
      * Implementation of CommonJS
@@ -204,7 +227,7 @@
           dependencies = getDependencies(id, dependencies);
         }
         name = getPluginName(id)
-        loader.Plugin(name, function onPlugin(plugin) {
+        Plugin(name, function onPlugin(plugin) {
           uri = resolve(getPluginUri(id), baseURI)
           // We override module in case it was already requested.
           module = Module({
@@ -215,8 +238,7 @@
             // `uri`.
             uri: plugin.normalize ? plugin.normalize(uri) : uri,
             name: name,
-            plugin: plugin,
-            cache: cache
+            plugin: plugin
           });
           module.factory = factory;
           module.dependencies = dependencies;
@@ -226,7 +248,7 @@
         // Shifting arguments since `uri` is missing.
         factory = dependencies;
         dependencies = id;
-        
+
         if (isInteractiveMode) {
           // If it's an interactive mode we are able to detect module ID by
           // finding an interactive script's `data-id` attribute. We call
@@ -261,7 +283,7 @@
       // We get (may involve loading of associated module) plugin associated
       // with a required `uri`. `onLoader` success callback, will be called
       // with `uri` that has plugin name stripped off and `loader` plugin.
-      loader.Plugin(name, function onPlugin(plugin) {
+      Plugin(name, function onPlugin(plugin) {
         uri = resolve(getPluginUri(id), base)
         // We override module in case it was already requested.
         module = Module({
@@ -273,8 +295,7 @@
           uri: plugin.normalize ? plugin.normalize(uri) : uri,
           name: name,
           plugin: plugin,
-          exports: exports,
-          cache: cache
+          exports: exports
         });
         module.load(success, failure)
         // Override exports in case module is already being loaded
@@ -285,25 +306,6 @@
     require.main = loader.main;
     return require;
   }
-  /**
-   * Returns plugin for the given module id.
-   */
-  Loader.prototype.Plugin = function Plugin(name, success, failure) {
-    var plugins = this.plugins;
-    if (!name || name === module.id)
-      return success(this)
-    // If we already cached plugin with this name then we return it.
-    if (name in plugins)
-      return success(plugins[name])
-    // Finally if module for this plugin has not been required yet, we require
-    // it and then create a loader out of it.
-    this.require(name, function onRequire(plugin) {
-      success(plugins[name] = plugin);
-    }, failure);
-  }
-  Loader.prototype.normalize = function normalize(uri) {
-    return uri.substr(-3) !== '.js' ? uri + '.js' : uri
-  }
   Loader.prototype.link = function link(module) {
     var dependencies = module.dependencies, l = dependencies.length, ll = l
 
@@ -311,6 +313,9 @@
     function reject(error) { module.reject(error) }
 
     while (l--) this.require(dependencies[l], next, reject)
+  }
+  Loader.prototype.normalize = function normalize(uri) {
+    return uri.substr(-3) !== '.js' ? uri + '.js' : uri
   }
   Loader.prototype.compile = function compile(module) {
     if (!module.dependencies.length) module.evaluate(module.factory)
@@ -352,16 +357,15 @@
     // we use listener for that event, in order to call `define` second time
     // with an explicit module `id` that is read form 'data-id' element.
     if (element.addEventListener)
-      element.addEventListener('load', this.onInject, false)
+      element.addEventListener('load', onInject, false)
 
     document.getElementsByTagName('head')[0].appendChild(element)
   }
 
   exports.Loader = Loader
-  teleport = new Loader
+  var teleport = new Loader
   exports.define = teleport.define
   exports.require = teleport.require
-  exports.cache = teleport.cache
 
 define('loader', [], function(require, exports, module, undefined) {
 
