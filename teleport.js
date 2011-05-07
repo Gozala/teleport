@@ -6,7 +6,7 @@
 // CommonJS AMD 1.1 loader.
 (function(require, exports, module, undefined) {
   var isInteractiveMode, isArray, isString, baseURI, cache, anonymous, onInject,
-      plugins,
+      plugins, observers, LOADING, LOADED, BROKEN, SUCCESS, FAILURE, teleport,
 
       COMMENTS_MATCH = /(\/\*([^*]|[\r\n]|(\*+([^*\/]|[\r\n])))*\*+\/)|((^|\n)[^\'\"\n]*\/\/[^\n]*)/g,
       REQUIRE_MATCH = /(^|[^\w\_])require\s*\(('|")([\w\W]*?)('|")\)/g
@@ -24,7 +24,15 @@
   // Map of cached plugins, which is just a map of plugin names mapped to the
   // associated modules.
   plugins = {}
+  // module observers map linked with a module id.
+  observers = {}
 
+  LOADING = []
+  LOADED = []
+  BROKEN = []
+
+  SUCCESS = {}
+  FAILURE = {}
   // IE (at least 6-8) do not dispatches `'load'` events on script elements
   // after execution, but `readyState` property value of such script elements
   // is `'interactive'`, which we default to in case `addEventListener` is
@@ -94,6 +102,13 @@
     return base.join('/')
   }
 
+  function normalize(plugin, name, id, base) {
+    id = getPluginUri(id)
+    id = plugin.normalize ? plugin.normalize(id) : id
+    id = resolve(id, base)
+    return name ? name + '!' + id : id
+  }
+
   /**
    * Function takes `id` and `source` of module and returns array of absolute
    * id's of modules that are required by a given module. (function does naive
@@ -117,63 +132,76 @@
     return dependencies
   }
 
+  function isLoaded(id, set) {
+    return set ? LOADED.push(id) : ~LOADED.indexOf(id)
+  }
+  function isLoading(id, set) {
+    return set ? LOADING.push(id) : ~LOADING.indexOf(id)
+  }
+  function isBroken(id, set) {
+    return set ? BROKEN.push(id) : ~BROKEN.indexOf(id)
+  }
+  function observe(id, success, failure) {
+    if (success)
+      (SUCCESS[id] || (SUCCESS[id] = [])).push(success)
+    if (failure)
+      (FAILURE[id] || (FAILURE[id] = [])).push(failure)
+  }
+  function signal(id, result, success) {
+    var observer, observers = (success ? SUCCESS : FAILURE)[id]
+    ;delete SUCCESS[id]
+    ;delete FAILURE[id]
+    if (observers)
+      while ((observer = observers.shift())) observer(result)
+  }
+  function failed(module, failure) {
+    isBroken(module.id, true)
+    signal(module.id, module.failure = failure, false)
+  }
+  function loaded(module, exports) {
+    isLoaded(module.id, true)
+    signal(module.id, module.exports = exports, true)
+  }
+
+  function load(module, plugin, success, failure) {
+    var id = module.id
+    if (isLoaded(id)) return success && success(module.exports)
+    else if (isBroken(id)) return failure && failure(module.failure)
+    else observe(id, success, failure)
+
+    if (!isLoading(id)) {
+      isLoading(id, true)
+      ;(plugin.load || teleport.load)(module, loaded, failed)
+    }
+  }
+
+  function evaluate(module) {
+    module.factory.call(module, Require(module.id), module.exports, module, undefined)
+  }
+
+  function compile(module) {
+    var dependencies = module.dependencies, l = dependencies.length, ll = l
+
+    function next() {
+      if (--ll === 0) {
+        evaluate(module)
+        loaded(module, module.exports)
+      }
+    }
+
+    while (l--) require(dependencies[l], next, failed)
+  }
+
   function Module(options) {
     var module
     if (!options) return this
-    if (!(module = cache[options.name + '!' + options.uri])) {
-      module = cache[options.name + '!' + options.uri] = new Module
-      module.observers = options.observers || []
-      module.meta = options.meta || {}
-      module.id = module.meta.id = options.id
-      module.uri = module.meta.uri = options.uri
-      module.name = module.meta.plugin = options.name
-      module.meta.exports = options.exports || {}
-      module.plugin = options.plugin
+    if (!(module = cache[options.id])) {
+      module = cache[options.id] = new Module
+      module.exports = options.exports || {}
+      module.id = options.id
+      module.uri = getPluginUri(module.id)
     }
-    return module;
-  }
-  Module.prototype.isLoaded = false;
-  Module.prototype.isLoading = false;
-  Module.prototype.falure = null;
-  Module.prototype.load = function load(success, failure) {
-    if (this.isLoaded) return success && success(this.meta.exports)
-    else if (this.failure) return failure && failure(this.failure)
-    else this.observers.push([ success, failure ])
-
-    if (!this.isLoading) (this.plugin.load || module.exports.load)(this)
-    this.isLoading = true
-  }
-  Module.prototype.compile = function compile() {
-    if (this.plugin && this.plugin.compile)
-      this.plugin.compile(this)
-    else if (this.plugin && this.plugin.evaluate)
-      this.plugin.evaluate(this)
-    else
-      this.execute()
-  }
-  Module.prototype.evaluate = function evaluate() {
-    if (this.plugin.evaluate)
-      this.plugin.evaluate(this)
-  }
-  Module.prototype.execute = function execute() {
-    this.factory.call(NaN, Require(this.id), this.meta.exports, this.meta, undefined)
-    this.resolve()
-  }
-  Module.prototype.reject = function reject(error) {
-    this.failure = error
-    this.complete()
-  }
-  Module.prototype.resolve = function resolve() {
-    this.isLoaded = true
-    this.complete()
-  }
-  Module.prototype.complete = function complete() {
-    var observer, observers = this.observers
-    this.observer = this.plugin = null
-    while ((observer = observers.shift())) {
-      if ((observer = observer[this.isLoaded ? 0 : 1]))
-        observer(this.isLoaded ? this.meta.exports : this.error)
-    }
+    return module
   }
 
   /**
@@ -192,16 +220,14 @@
   }
 
   onInject = function onInject(event) {
-    var element, id, name, uri, deferred
+    var element, id, deferred
     element = event.currentTarget || event.srcElement
     element.removeEventListener('load', onInject, false)
     id = element.getAttribute('data-id')
-    name = element.getAttribute('data-plugin')
-    uri = element.getAttribute('data-uri')
     // Define deferred module only if it has not been defined yet. In some
     // cases modules with explicit id's can be used in mix with anonymous
     // modules and we should only handle anonymous ones.
-    if (!Module({ id: id, name: name, uri: uri }).isLoaded) {
+    if (!isLoaded(id)) {
       deferred = anonymous.pop()
       deferred.unshift(id)
       define.apply(null, deferred)
@@ -224,42 +250,37 @@
     var module, name, uri
     if (isString(id)) {
       if (!isArray(dependencies)) {
-        factory = dependencies;
-        dependencies = getDependencies(id, dependencies);
+        factory = dependencies
+        dependencies = getDependencies(id, dependencies)
       }
       name = getPluginName(id)
       Plugin(name, function onPlugin(plugin) {
-        uri = resolve(getPluginUri(id), baseURI)
+        id = normalize(plugin, name, id, baseURI)
         // We override module in case it was already requested.
-        module = Module({
-          // Module `id` is original `uri` with plugin prefix and resolved uri
-          // suffix. Required module exports are cached using this `id`.
-          id: name ? name + '!' + uri : uri,
-          // Required `uri` is resolved with to the `base` to get an absolute
-          // `uri`.
-          uri: plugin.normalize ? plugin.normalize(uri) : uri,
-          name: name,
-          plugin: plugin
-        });
-        module.factory = factory;
-        module.dependencies = dependencies;
-        module.compile();
+        module = Module({ id: id })
+        module.factory = factory
+        module.dependencies = dependencies
+        if (!dependencies.length) {
+          evaluate(module)
+          loaded(module, module.exports)
+        }
+        else compile(module)
       })
     } else {
       // Shifting arguments since `uri` is missing.
-      factory = dependencies;
-      dependencies = id;
+      factory = dependencies
+      dependencies = id
 
       if (isInteractiveMode) {
         // If it's an interactive mode we are able to detect module ID by
         // finding an interactive script's `data-id` attribute. We call
         // `define` once again, but this time with an explicit module `id`.
-        define(getId(), dependencies, factory);
+        define(getId(), dependencies, factory)
       } else {
         // If it's not an interactive mode we need to wait for an associated
         // script `load` event. We store `dependencies` and `factory` so that
         // we can access them later, from the event listener.
-        anonymous.push([ dependencies, factory ]);
+        anonymous.push([ dependencies, factory ])
       }
     }
   }
@@ -270,7 +291,7 @@
      * detect
      */
     var require = function require(id, success, failure) {
-      var uri, name, module;
+      var module, name, exports;
       // If we got this far, than module is not loaded yet, so we load it via
       // module loader plugin associated with the given `uri`.
       // We define both module `exports` and `meta` data in advance which will
@@ -283,38 +304,23 @@
       // with a required `uri`. `onLoader` success callback, will be called
       // with `uri` that has plugin name stripped off and `loader` plugin.
       Plugin(name, function onPlugin(plugin) {
-        uri = resolve(getPluginUri(id), base)
+        id = normalize(plugin, name, id, base)
         // We override module in case it was already requested.
-        module = Module({
-          // Module `id` is original `uri` with plugin prefix and resolved uri
-          // suffix. Required module exports are cached using this `id`.
-          id: name ? name + '!' + uri : uri,
-          // Required `uri` is resolved with to the `base` to get an absolute
-          // `uri`.
-          uri: plugin.normalize ? plugin.normalize(uri) : uri,
-          name: name,
-          plugin: plugin,
-          exports: exports
-        });
-        module.load(success, failure)
+        module = Module({ id: id, exports: exports })
         // Override exports in case module is already being loaded
-        exports = module.meta.exports
-      }, failure);
-      return exports;
+        exports = module.exports
+        load(module, plugin, success, failure)
+      }, failure)
+      return exports
     };
     // require.main = loader.main;
-    return require;
+    return require
   }
 
 
   exports.define = define
   exports.require = require = Require()
-  Module({
-    id: module.id,
-    uri: module.id,
-    name: '',
-    exports: plugins[module.id] = module.exports = {}
-  })
+  Module({ id: module.id, exports: plugins[module.id] = teleport = {} })
 
 define(module.id, [], function(require, exports, module, undefined) {
   exports.version = '0.1.0'
@@ -324,20 +330,6 @@ define(module.id, [], function(require, exports, module, undefined) {
 
   exports.normalize = function normalize(uri) {
     return uri.substr(-3) !== '.js' ? uri + '.js' : uri
-  }
-
-  exports.link = function link(module) {
-    var dependencies = module.dependencies, l = dependencies.length, ll = l
-
-    function next() { if (--ll === 0) module.evaluate(module.factory) }
-    function reject(error) { module.reject(error) }
-
-    while (l--) require(dependencies[l], next, reject)
-  }
-
-  exports.compile = function compile(module) {
-    if (!module.dependencies.length) module.evaluate(module.factory)
-    else exports.link(module)
   }
 
   exports.evaluate = function evaluate(module) {
@@ -358,7 +350,7 @@ define(module.id, [], function(require, exports, module, undefined) {
    *    Callback that is called with an `error` that occurred when loading
    *    `resource` form `uri`.
    */
-  exports.load = function load(module) {
+  exports.load = function load(module, success, failure) {
     var element;
     // Using standard script injection technique in order to load resource
     // from the given `uri`.
@@ -366,8 +358,6 @@ define(module.id, [], function(require, exports, module, undefined) {
     element.setAttribute('type', 'text/javascript')
     element.setAttribute('data-loader', 'teleport')
     element.setAttribute('data-id', module.id)
-    element.setAttribute('data-uri', module.uri)
-    element.setAttribute('data-plugin', module.name)
     element.setAttribute('src', module.uri)
     element.setAttribute('charset', 'utf-8')
     element.setAttribute('async', true)
@@ -395,13 +385,12 @@ define('text', [], function(require, exports, module, undefined) {
                   .replace(/[\t]/g, "\\t")
                   .replace(/[\r]/g, "\\r")
   }
-  exports.load = function load(module) {
+  exports.load = function load(module, callback) {
     var xhr = new XMLHttpRequest()
     xhr.open('GET', module.uri, true)
     xhr.onreadystatechange = function onProgress() {
       if (xhr.readyState === 4) {
-        module.meta.exports = xhr.responseText
-        module.resolve()
+        callback(module, xhr.responseText)
       }
     }
     xhr.send(null)
@@ -410,6 +399,8 @@ define('text', [], function(require, exports, module, undefined) {
 
 define('http', [], function(require, exports, module, undefined) {
   exports.normalize = function normalize(uri) {
-    return "http://" + uri
+    uri = ~uri.indexOf("http://") ? uri : "http://" + uri
+    uri = uri.substr(-3) === ".js" ? uri : uri + '.js'
+    return uri
   }
 })
