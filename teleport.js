@@ -94,15 +94,14 @@
   function Module(options) {
     var module
     if (!options) return this
-    if (!(module = options.cache[options.id])) {
-      module = new Module
+    if (!(module = options.cache[options.name + '!' + options.uri])) {
+      module = options.cache[options.name + '!' + options.uri] = new Module
       module.observers = options.observers || []
       module.meta = options.meta || {}
       module.id = module.meta.id = options.id
       module.uri = module.meta.uri = options.uri
       module.meta.exports = options.exports || {}
       module.plugin = options.plugin
-      module = options.cache[module.id] = module
     }
     return module;
   }
@@ -184,16 +183,31 @@
      *    **Non-standard** helper utilities (improving debugging)
      */
     loader.define = function define(id, dependencies, factory) {
-      var module;
+      var module, name, uri
       if (isString(id)) {
         if (!isArray(dependencies)) {
           factory = dependencies;
           dependencies = getDependencies(id, dependencies);
         }
-        module = Module({ id: id, cache: cache, plugin: loader })
-        module.factory = factory;
-        module.dependencies = dependencies;
-        module.compile();
+        name = getPluginName(id)
+        loader.Plugin(name, function onPlugin(plugin) {
+          uri = getPluginUri(id)
+          // We override module in case it was already requested.
+          module = Module({
+            // Module `id` is original `uri` with plugin prefix and resolved uri
+            // suffix. Required module exports are cached using this `id`.
+            id: name ? name + '!' + uri : uri,
+            // Required `uri` is resolved with to the `base` to get an absolute
+            // `uri`.
+            uri: plugin.normalize ? plugin.normalize(uri) : uri,
+            name: name,
+            plugin: plugin,
+            cache: cache
+          });
+          module.factory = factory;
+          module.dependencies = dependencies;
+          module.compile();
+        })
       } else {
         // Shifting arguments since `uri` is missing.
         factory = dependencies;
@@ -243,6 +257,7 @@
           // Required `uri` is resolved with to the `base` to get an absolute
           // `uri`.
           uri: plugin.normalize ? plugin.normalize(uri) : uri,
+          name: name,
           plugin: plugin,
           exports: exports,
           cache: cache
