@@ -7,6 +7,7 @@
 (function(require, exports, module, undefined) {
   var isInteractiveMode, isArray, isString, baseURI, cache, anonymous, onInject,
       plugins, observers, LOADING, LOADED, BROKEN, SUCCESS, FAILURE, teleport,
+      main,
 
       COMMENTS_MATCH = /(\/\*([^*]|[\r\n]|(\*+([^*\/]|[\r\n])))*\*+\/)|((^|\n)[^\'\"\n]*\/\/[^\n]*)/g,
       REQUIRE_MATCH = /(^|[^\w\_])require\s*\(('|")([\w\W]*?)('|")\)/g
@@ -26,6 +27,7 @@
   plugins = {}
   // module observers map linked with a module id.
   observers = {}
+  main = null
 
   LOADING = []
   LOADED = []
@@ -44,6 +46,12 @@
     return '[object Array]' === Object.prototype.toString.call(value)
   }
 
+   function getMainId() {
+     var i, ii, main, elements = document.getElementsByTagName('script');
+     for (i = 0, ii = elements.length; i < ii; i++)
+       if ((main = elements[i].getAttribute('data-main'))) return main
+   }
+
   function getId() {
     var script, scripts = document.getElementsByTagName('script'),
         l = scripts.length;
@@ -55,6 +63,7 @@
   }
 
   function isAbsolute(uri) { return ~uri.indexOf('://') }
+  function isPlugin(uri) { return ~uri.indexOf('!') }
 
   function getBaseURI() {
     var index, uri;
@@ -121,11 +130,17 @@
    * @returns {String[]}
    */
   function getDependencies(uri, source) {
-    var dependency, dependencies = [];
+    var match, plugin, dependency, dependencies = [];
     // strip out comments to ignore commented `require` calls.
     source = String(source).replace(COMMENTS_MATCH, '')
-    while ((dependency = REQUIRE_MATCH.exec(source))) {
-      dependency = resolve(dependency[3], uri)
+    while ((match = REQUIRE_MATCH.exec(source))) {
+      dependency = match[3]
+
+      if ((plugin = getPluginName(dependency)))
+        dependency = plugin + "!" + resolve(getPluginUri(dependency), uri)
+      else
+        dependency = resolve(dependency, uri)
+
       if (!~dependencies.indexOf(dependency))
         dependencies.push(dependency)
     }
@@ -313,12 +328,17 @@
       }, failure)
       return exports
     };
-    // require.main = loader.main;
+    require.main = main
     return require
   }
 
-
+  module.id = resolve('teleport', baseURI);
   exports.define = define
+  main = exports.main = function (id) {
+    // TODO: Fix this hack in a saner way.
+    main = Module({ id: normalize(teleport, '', id, baseURI), exports: {} })
+    require(id)
+  }
   exports.require = require = Require()
   Module({ id: module.id, exports: plugins[module.id] = teleport = {} })
 
@@ -326,6 +346,7 @@ define(module.id, [], function(require, exports, module, undefined) {
   exports.version = '0.1.0'
 
   exports.require = require
+  exports.main = require.main
   exports.define = define
 
   exports.normalize = function normalize(uri) {
@@ -371,9 +392,13 @@ define(module.id, [], function(require, exports, module, undefined) {
 
     document.getElementsByTagName('head')[0].appendChild(element)
   }
+
+  var main = getMainId()
+  if (main)
+    exports.main(main)
 })
 
-})(null, this, { id: 'teleport://teleport.js' }, undefined);
+})(null, this, {}, undefined);
 
 define('text', [], function(require, exports, module, undefined) {
   exports.version = '0.1.0'
