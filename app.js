@@ -65,7 +65,7 @@ Teleport.prototype.router = function router(path) {
   var teleport = this
   return function router(app) {
     app.get(path + '/metadata.json', function onMeta(request, response, next) {
-      next(JSON.stringify(teleport.metadata, '', '  '))
+      response.end(JSON.stringify(teleport.metadata, '', '  '))
     })
     app.get(path + '/*.js', function onModule(request, response, next) {
       var id = request.params[0]
@@ -75,7 +75,7 @@ Teleport.prototype.router = function router(path) {
                      '\n/**/});'
           response.end(source)
       } catch (error) {
-        next(JSON.stringify(error))
+        response.end(JSON.stringify(error))
       }
     })
   }
