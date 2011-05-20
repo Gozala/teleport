@@ -14,9 +14,10 @@
   "directories": { "lib": "./" },
   "dependencies": {
     "test": ">=0.1.0",
-    "npm": ">=0.2.16",
+    "npm": "1.x.x",
     "mime": ">=1.2.1",
     "system": ">=0.1.0",
+    "connect": "1.4.1",
     "q": "0.2.5",
     "promised-fs": ">=0.1.0",
     "promised-utils": ">=0.0.8",
