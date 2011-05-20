@@ -1,5 +1,5 @@
 { "name": "teleport",
-  "version": "0.3.2",
+  "version": "0.4.0",
   "description": "CommonJS modules 1.0 loader for browsers.",
   "homepage": "http://jeditoolkit.com/teleport/",
   "keywords": ["commonjs", "modules", "require"],
@@ -21,7 +21,8 @@
     "promised-fs": ">=0.1.0",
     "promised-utils": ">=0.0.8",
     "core-utils": ">=0.0.4",
-    "teleport-dashboard": ">=0.0.5"
+    "teleport-dashboard": ">=0.0.5",
+    "light-traits": "0.1.0"
   },
   "bin": { "teleport" : "./bin/teleport.js" },
   "scripts": { "test": "node test/all.js" },

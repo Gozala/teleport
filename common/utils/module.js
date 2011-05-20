@@ -4,7 +4,7 @@ var SEPARATOR = '/'
   , VERSION_MARK = '@'
   , COMMENTS_MATCH = /(\/\*([^*]|[\r\n]|(\*+([^*\/]|[\r\n])))*\*+\/)|((^|\n)[^\'\"\n]*\/\/[^\n]*)/g
   , REQUIRE_MATCH = /(^|[^\w\_])require\s*\(('|")([\w\W]*?)('|")\)/g
-  , TRANSPORT_WRAPPER = 'define("{{id}}", [{{dependencies}}], function(require, exports, module, undefined) { {{source}} \n/**/});'
+  , TRANSPORT_WRAPPER = 'define("{{id}}", [{{dependencies}}], function(require, exports, module, undefined, define) { {{source}} \n/**/});'
   , MODULE_EXTENSION = '.js'
 
 /**

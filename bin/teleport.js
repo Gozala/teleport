@@ -2,11 +2,11 @@
 
 'use strict'
 
-var activate = require('teleport/commands/activate').activate
-,   bundle = require('teleport/commands/bundle').bundle
-,   reflect = require('teleport/commands/reflect').reflect
+var activate = require('../commands/activate').activate
+,   bundle = require('../commands/bundle').bundle
+,   reflect = require('../commands/reflect').reflect
 ,   args = require('system').args.splice(2)
-,   CONST = require('teleport/strings')
+,   CONST = require('../strings')
 
 ,   command = args[0]
 ,   params = args.slice(1)

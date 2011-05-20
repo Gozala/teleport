@@ -2,9 +2,9 @@
 
 var Q = require("q")
 var pu = require("promised-utils"), Promised = pu.Promised, all = pu.all
-var Registry = require("teleport/registry").Registry
-var moduleUtils = require("teleport/common/utils/module")
-var projectUtils = require("teleport/project")
+var Registry = require("../registry").Registry
+var moduleUtils = require("../common/utils/module")
+var projectUtils = require("../project")
 var fs = require("promised-fs")
 
 exports.reflect = function reflect(path) {
