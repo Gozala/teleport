@@ -57,7 +57,6 @@ function Teleport(data) {
       ]
     }
   })
-  console.log(this.module.paths)
 }
 exports.Teleport = Teleport
 Teleport.prototype.router = function router(path) {
