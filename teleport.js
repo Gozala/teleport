@@ -9,8 +9,9 @@
       plugins, observers, LOADING, LOADED, BROKEN, SUCCESS, FAILURE, teleport,
       main,
 
-      COMMENTS_MATCH = /(\/\*([^*]|[\r\n]|(\*+([^*\/]|[\r\n])))*\*+\/)|((^|\n)[^\'\"\n]*\/\/[^\n]*)/g,
-      REQUIRE_MATCH = /(^|[^\w\_])require\s*\(('|")([\w\W]*?)('|")\)/g
+      COMMENT_PATTERN = /(\/\*[\s\S]*?\*\/)|((^|\n)[^('|"|\n)]*\/\/[^\n]*)/g,
+      REQUIRE_PATTERN = /require\s*\(['"]([\w\W]*?)['"]\s*\)/g
+
 
   // Both successfully loaded and failed modules are cached by the unique
   // identifier that is contains plugin `name` used to load and a resource
@@ -138,9 +139,9 @@
   function getDependencies(uri, source) {
     var match, plugin, dependency, dependencies = [];
     // strip out comments to ignore commented `require` calls.
-    source = String(source).replace(COMMENTS_MATCH, '')
-    while ((match = REQUIRE_MATCH.exec(source))) {
-      dependency = match[3]
+    source = String(source).replace(COMMENT_PATTERN, '')
+    while ((match = REQUIRE_PATTERN.exec(source))) {
+      dependency = match[1]
 
       if ((plugin = getPluginName(dependency)))
         dependency = plugin + "!" + resolve(getPluginUri(dependency), uri)
