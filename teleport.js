@@ -66,18 +66,7 @@
   function isAbsolute(uri) { return ~uri.indexOf('://') }
   function isPlugin(uri) { return ~uri.indexOf('!') }
 
-  function getBaseURI() {
-    var index, uri;
-    uri = document.baseURI || document.URL
-    // Stripping out search / query arguments
-    if (~(index = uri.indexOf('?'))) uri = uri.substr(0, index)
-    // Stripping out hash data
-    if (~(index = uri.indexOf('#'))) uri = uri.substr(0, index)
-    // Stripping out trailing `/`
-    // if ('/' === uri.charAt(index = uri.length - 1)) uri = uri.substr(0, index)
-    return uri
-  }
-  baseURI = getBaseURI()
+  baseURI = ''
 
   function getPluginName(id) {
     var index = id.indexOf('!')
@@ -180,14 +169,14 @@
     isBroken(module.id, true)
     signal(module.id, module.failure = failure, false)
   }
-  function loaded(module, exports) {
+  function loaded(module) {
     isLoaded(module.id, true)
-    signal(module.id, module.exports = exports, true)
+    signal(module.id, module, true)
   }
 
   function load(module, plugin, success, failure) {
     var id = module.id
-    if (isLoaded(id)) return success && success(module.exports)
+    if (isLoaded(id)) return success && success(module)
     else if (isBroken(id)) return failure && failure(module.failure)
     else observe(id, success, failure)
 
@@ -197,6 +186,12 @@
     }
   }
 
+  function loadAndRun(module, plugin, success, failure) {
+    load(module, plugin, function() {
+      evaluate(module)
+      success && success(module.exports)
+    }, failure)
+  }
   function evaluate(module) {
     module.factory.call(module, Require(module.id), module.exports, module, undefined)
   }
@@ -206,8 +201,7 @@
 
     function next() {
       if (--ll === 0) {
-        evaluate(module)
-        loaded(module, module.exports)
+        loaded(module)
       }
     }
 
@@ -283,8 +277,7 @@
         module.factory = factory
         module.dependencies = dependencies
         if (!dependencies.length) {
-          evaluate(module)
-          loaded(module, module.exports)
+          loaded(module)
         }
         else compile(module)
       })
@@ -331,7 +324,7 @@
         module = Module({ id: id, exports: exports })
         // Override exports in case module is already being loaded
         exports = module.exports
-        load(module, plugin, success, failure)
+        loadAndRun(module, plugin, success, failure)
       }, failure)
       return exports
     };
@@ -347,64 +340,55 @@
     require(id)
   }
   exports.require = require = Require()
-  Module({ id: module.id, exports: plugins[module.id] = teleport = {} })
+  teleport = plugins[module.id] = {
+    version: '0.1.0',
+    require: require,
+    main: require.main,
+    define: define,
+    normalize: function normalize(uri) {
+      return uri.substr(-3) !== '.js' ? uri + '.js' : uri
+    },
+    evaluate: function evaluate(module) {
+      module.factory.call(NaN, Require(module.id), module.meta.exports, module.meta, undefined)
+      module.resolve()
+    },
+    /**
+     * Loads resource from the given `uri`. Once resource is loaded (in this
+     * context it also means enclosed JS calls `define` and module `id` is
+     * detected using some hackery) `success` callback is called. If loading
+     * fails then `failure` callback is called instead.
+     * @param {String} uri
+     *    URI of the resource to be loaded.
+     * @param {Function} success
+     *    Callback that is called with `uri` and loaded `resource` from it.
+     * @param {Function} failure
+     *    Callback that is called with an `error` that occurred when loading
+     *    `resource` form `uri`.
+     */
+    load: function load(module, success, failure) {
+      var element;
+      // Using standard script injection technique in order to load resource
+      // from the given `uri`.
+      element = document.createElement('script')
+      element.setAttribute('type', 'text/javascript')
+      element.setAttribute('data-loader', 'teleport')
+      element.setAttribute('data-id', module.id)
+      element.setAttribute('src', module.uri)
+      element.setAttribute('charset', 'utf-8')
+      element.setAttribute('async', true)
 
-define(module.id, [], function(require, exports, module, undefined) {
-  exports.version = '0.1.0'
+      // If element has `addEventListener` then it's a modern browser and
+      // "load" event will be called on script element after script is executed
+      // we use listener for that event, in order to call `define` second time
+      // with an explicit module `id` that is read form 'data-id' element.
+      if (element.addEventListener)
+        element.addEventListener('load', onInject, false)
 
-  exports.require = require
-  exports.main = require.main
-  exports.define = define
-
-  exports.normalize = function normalize(uri) {
-    return uri.substr(-3) !== '.js' ? uri + '.js' : uri
+      document.getElementsByTagName('head')[0].appendChild(element)
+    }
   }
 
-  exports.evaluate = function evaluate(module) {
-    module.factory.call(NaN, Require(module.id), module.meta.exports, module.meta, undefined)
-    module.resolve()
-  }
-
-  /**
-   * Loads resource from the given `uri`. Once resource is loaded (in this
-   * context it also means enclosed JS calls `define` and module `id` is
-   * detected using some hackery) `success` callback is called. If loading
-   * fails then `failure` callback is called instead.
-   * @param {String} uri
-   *    URI of the resource to be loaded.
-   * @param {Function} success
-   *    Callback that is called with `uri` and loaded `resource` from it.
-   * @param {Function} failure
-   *    Callback that is called with an `error` that occurred when loading
-   *    `resource` form `uri`.
-   */
-  exports.load = function load(module, success, failure) {
-    var element;
-    // Using standard script injection technique in order to load resource
-    // from the given `uri`.
-    element = document.createElement('script')
-    element.setAttribute('type', 'text/javascript')
-    element.setAttribute('data-loader', 'teleport')
-    element.setAttribute('data-id', module.id)
-    element.setAttribute('src', module.uri)
-    element.setAttribute('charset', 'utf-8')
-    element.setAttribute('async', true)
-
-    // If element has `addEventListener` then it's a modern browser and
-    // "load" event will be called on script element after script is executed
-    // we use listener for that event, in order to call `define` second time
-    // with an explicit module `id` that is read form 'data-id' element.
-    if (element.addEventListener)
-      element.addEventListener('load', onInject, false)
-
-    document.getElementsByTagName('head')[0].appendChild(element)
-  }
-
-  var main = getMainId()
-  if (main)
-    exports.main(main)
-})
-
+  if ((main = getMainId())) teleport.main(main)
 })(null, this, {}, undefined);
 
 define('text', [], function(require, exports, module, undefined) {
