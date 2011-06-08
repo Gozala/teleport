@@ -97,17 +97,23 @@
    * @return {String}
    *    absolute id
    */
+  function isAbsolute(uri) { return uri && uri.charAt(0) !== '.' }
   function resolve(uri, base) {
-    var path, paths, root, extension
+    var path, paths, last
     if (isAbsolute(uri)) return uri
-    base = base.split('/')
     paths = uri.split('/')
-    root = paths[0]
+    base = base ? base.split('/') : [ '.' ]
     if (base.length > 1) base.pop()
     while ((path = paths.shift())) {
-      if (path === '..' && base.length) base.pop()
-      else if (path !== '.') base.push(path)
+      if (path === '..') {
+        if (base.length && base[base.length - 1] !== '..') {
+          if (base.pop() === '.') base.push(path)
+        } else base.push(path)
+      } else if (path !== '.') {
+        base.push(path)
+      }
     }
+    if (base[base.length - 1].substr(-1) === '.') base.push('')
     return base.join('/')
   }
 
@@ -425,6 +431,13 @@ define('text', [], function(require, exports, module, undefined) {
 define('http', [], function(require, exports, module, undefined) {
   exports.normalize = function normalize(uri) {
     uri = ~uri.indexOf("http://") ? uri : "http://" + uri
+    uri = uri.substr(-3) === ".js" ? uri : uri + '.js'
+    return uri
+  }
+})
+define('https', [], function(require, exports, module, undefined) {
+  exports.normalize = function normalize(uri) {
+    uri = ~uri.indexOf("https://") ? uri : "https://" + uri
     uri = uri.substr(-3) === ".js" ? uri : uri + '.js'
     return uri
   }
