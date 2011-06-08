@@ -205,6 +205,7 @@
       }
     }
 
+    isLoading(module.id, true)
     while (l--) require(dependencies[l], next, failed)
   }
 
